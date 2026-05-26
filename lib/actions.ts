@@ -655,7 +655,7 @@ export async function createMeetup(formData: FormData): Promise<CreateMeetupResu
   if (!u || !u.labels.includes("organizer")) return { ok: false, error: "Not allowed." };
 
   const title = sanitize(formData.get("title"), 200).trim();
-  const description = sanitize(formData.get("description"), 4000).trim();
+  const description = sanitizeMultiline(formData.get("description"), 4000).trim();
   const date = sanitize(formData.get("date"), 10).trim();
   const externalUrl = sanitize(formData.get("external_url"), 500).trim();
 
@@ -684,6 +684,44 @@ export async function createMeetup(formData: FormData): Promise<CreateMeetupResu
   revalidatePath("/admin/meetups");
   revalidatePath("/meetups");
   return { ok: true, id: doc.$id };
+}
+
+export async function updateMeetup(formData: FormData): Promise<CreateMeetupResult> {
+  const u = await getCurrentUser();
+  if (!u || !u.labels.includes("organizer")) return { ok: false, error: "Not allowed." };
+
+  const id = sanitize(formData.get("id"), 100).trim();
+  const title = sanitize(formData.get("title"), 200).trim();
+  const description = sanitizeMultiline(formData.get("description"), 4000).trim();
+  const date = sanitize(formData.get("date"), 10).trim();
+  const externalUrl = sanitize(formData.get("external_url"), 500).trim();
+
+  if (!id) return { ok: false, error: "Missing meetup id." };
+  if (!title) return { ok: false, error: "Title is required." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { ok: false, error: "Enter a valid meetup date." };
+  }
+  if (externalUrl && !/^https?:\/\/\S+$/i.test(externalUrl)) {
+    return { ok: false, error: "External URL must start with http:// or https://." };
+  }
+
+  await adminTables().updateRow({
+    databaseId: db,
+    tableId: COLLECTIONS.meetups,
+    rowId: id,
+    data: {
+      title,
+      description,
+      date,
+      external_url: externalUrl
+    }
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/admin/meetups");
+  revalidatePath("/meetups");
+  return { ok: true, id };
 }
 
 // ===== Badges =====

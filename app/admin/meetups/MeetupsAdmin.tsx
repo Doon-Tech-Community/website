@@ -1,37 +1,71 @@
 "use client";
+
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { createMeetup } from "@/lib/actions";
+import { createMeetup, updateMeetup } from "@/lib/actions";
 import type { Meetup } from "@/lib/types";
+
+interface MeetupFormState {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  externalUrl: string;
+}
+
+const EMPTY_FORM: MeetupFormState = {
+  id: "",
+  title: "",
+  description: "",
+  date: "",
+  externalUrl: ""
+};
 
 export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [date, setDate] = useState("");
-  const [externalUrl, setExternalUrl] = useState("");
+  const [form, setForm] = useState<MeetupFormState>(EMPTY_FORM);
+  const editing = !!form.id;
+
+  function set<K extends keyof MeetupFormState>(key: K, value: MeetupFormState[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function resetForm() {
+    setError(null);
+    setForm(EMPTY_FORM);
+  }
+
+  function editMeetup(meetup: Meetup) {
+    setError(null);
+    setForm({
+      id: meetup.id,
+      title: meetup.title,
+      description: meetup.description,
+      date: meetup.date,
+      externalUrl: meetup.external_url
+    });
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
     const fd = new FormData();
-    fd.set("title", title);
-    fd.set("description", description);
-    fd.set("date", date);
-    fd.set("external_url", externalUrl);
+    if (form.id) fd.set("id", form.id);
+    fd.set("title", form.title);
+    fd.set("description", form.description);
+    fd.set("date", form.date);
+    fd.set("external_url", form.externalUrl);
 
     start(async () => {
-      const result = await createMeetup(fd);
+      const result = editing ? await updateMeetup(fd) : await createMeetup(fd);
       if (!result.ok) {
-        setError(result.error || "Failed to create meetup.");
+        setError(result.error || (editing ? "Failed to update meetup." : "Failed to create meetup."));
         return;
       }
-      setTitle("");
-      setDescription("");
-      setDate("");
-      setExternalUrl("");
+      setForm(EMPTY_FORM);
       router.refresh();
     });
   }
@@ -39,17 +73,24 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
   return (
     <>
       <section className="card-frame rounded-2xl p-5">
-        <h2 className="text-sm uppercase tracking-widest text-slate-300 font-semibold mb-3">
-          Create a new meetup
-        </h2>
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+          <h2 className="text-sm uppercase tracking-widest text-slate-300 font-semibold">
+            {editing ? "Edit meetup" : "Create a new meetup"}
+          </h2>
+          {editing && (
+            <button type="button" onClick={resetForm} disabled={pending} className="btn btn-ghost !py-1 !px-2 text-xs">
+              Cancel edit
+            </button>
+          )}
+        </div>
         <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1">
             <span className="label">Title *</span>
             <input
               className="input"
               required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={form.title}
+              onChange={(e) => set("title", e.target.value)}
               placeholder="DTC Meetup #12"
             />
           </label>
@@ -59,8 +100,8 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
               className="input"
               required
               type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              value={form.date}
+              onChange={(e) => set("date", e.target.value)}
             />
           </label>
           <label className="flex flex-col gap-1 md:col-span-2">
@@ -68,24 +109,25 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
             <input
               className="input"
               type="url"
-              value={externalUrl}
-              onChange={(e) => setExternalUrl(e.target.value)}
+              value={form.externalUrl}
+              onChange={(e) => set("externalUrl", e.target.value)}
               placeholder="https://lu.ma/..."
             />
           </label>
           <label className="flex flex-col gap-1 md:col-span-2">
             <span className="label">Description</span>
             <textarea
-              className="input min-h-[100px]"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              className="input min-h-[120px] resize-y whitespace-pre-wrap"
+              rows={5}
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
               placeholder="What is this meetup about?"
             />
           </label>
           {error && <div className="md:col-span-2 chip chip-legendary">{error}</div>}
           <div className="md:col-span-2 flex justify-end">
-            <button type="submit" disabled={pending || !title.trim() || !date} className="btn btn-primary">
-              {pending ? "Saving..." : "Create meetup"}
+            <button type="submit" disabled={pending || !form.title.trim() || !form.date} className="btn btn-primary">
+              {pending ? "Saving..." : editing ? "Save meetup" : "Create meetup"}
             </button>
           </div>
         </form>
@@ -105,9 +147,10 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold">{m.title}</span>
                     <span className="chip">{m.date}</span>
+                    {form.id === m.id && <span className="chip chip-epic">Editing</span>}
                   </div>
                   {m.description && (
-                    <p className="text-sm text-slate-300 mt-1 line-clamp-2">{m.description}</p>
+                    <p className="text-sm text-slate-300 mt-1 whitespace-pre-wrap line-clamp-2">{m.description}</p>
                   )}
                   {m.external_url && (
                     <a
@@ -120,6 +163,14 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
                     </a>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => editMeetup(m)}
+                  disabled={pending}
+                  className="btn btn-primary !py-1 !px-2 text-xs shrink-0"
+                >
+                  Edit
+                </button>
               </li>
             ))}
           </ul>
