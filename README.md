@@ -21,17 +21,18 @@ A collectible attendee index for every face in the Doon Tech Community.
 2. From the project root, push the schema defined in `appwrite.config.json`:
 
    ```powershell
-   appwrite push project
-   appwrite push collection
-   appwrite push bucket
+   appwrite push tables
+   appwrite push buckets
    ```
 
-   This provisions the `dtc` database, the six collections (`attendees`, `tags`, `meetups`, `badges`, `attendee_badges`, `featured`), and the `avatars` storage bucket.
+   This provisions the `dtc` database, the six tables (`attendees`, `tags`, `meetups`, `badges`, `attendee_badges`, `featured`), and the `avatars` storage bucket.
 
 3. Create a server API key (Project → Overview → Integrations → API Keys) with scopes:
-   - `databases.read`, `databases.write`
-   - `users.read`
-   - `files.read`, `files.write`
+   - `databases.read`, `databases.write` — used by every `adminTables()` row CRUD call
+   - `users.read` — `users.list` / `users.get` (organizer-access lookup)
+   - `users.write` — `users.updateLabels` (granting the `organizer` label) and `users.updateName` (profile setup)
+   - `files.read`, `files.write` — avatar uploads via `adminStorage().createFile`
+   - `sessions.write` — `adminAccount().createSession` (SSR receives `session.secret` and sets the cookie); also implicitly required by `createEmailToken` for the OTP flow
 
 4. Copy `.env.example` to `.env.local` and fill in:
 
@@ -43,8 +44,6 @@ A collectible attendee index for every face in the Doon Tech Community.
    APPWRITE_API_KEY=...
    NEXT_PUBLIC_SITE_URL=http://localhost:3000
    ```
-
-   The API key must include `sessions.write` so SSR auth can create a session and receive `session.secret`. It also needs the database, user, and storage scopes used by the admin actions.
 
 5. Make yourself an organizer. Sign in once (see "Run locally" below), then in the Appwrite console open the user record and add the label `organizer` (Users → your user → Labels → `+ organizer`). The app gates all admin actions on this label.
 
@@ -89,16 +88,19 @@ app/
   dex/page.tsx (Pokédex grid)
   attendees/[slug]/page.tsx (profile)
   meetups/page.tsx (link list)
+  profile/page.tsx, profile/setup/page.tsx (self-service profile)
   admin/page.tsx (organizer dashboard)
-  admin/attendees/new + [id]/edit (forms)
+  admin/attendees/new + [id]/edit (forms, with AttendeeBadgesPanel)
   admin/meetups/page.tsx (meetup creation)
   admin/tags/page.tsx (tag creation)
+  admin/badges/page.tsx (badge creation)
   og/route.tsx (OG images)
   sitemap.ts, robots.ts, not-found.tsx, icon.svg, apple-icon.tsx
 components/
-  Nav, AttendeeCard, AttendeeForm, OrganizerAuthButton
-  Avatar, TagChip, BadgePill, FiltersBar
+  Nav, NavLinks, AttendeeCard, AttendeeForm, OrganizerAuthButton
+  Avatar, TagChip, BadgePill, FiltersBar, ProfileCompletionGate
   PokedexTilt, PowerButton, DeviceControls, SoundProvider
+  (admin: BadgesAdmin, MeetupsAdmin, TagsAdmin, OrganizerAccessAdmin, AdminAttendeesTable)
 lib/
   appwrite.ts (server clients, IDs, helpers)
   auth.ts (getCurrentUser, isOrganizer, requireOrganizer)
@@ -113,5 +115,6 @@ appwrite.config.json (Appwrite CLI schema)
 - All writes go through server actions in `lib/actions.ts`. They authenticate the request via the session cookie, enforce the `organizer` label (or `user_id` match for self-edits), and use the admin API key to perform the mutation.
 - Organizers can add meetups from `/admin/meetups`; new records appear on `/meetups` and update the dashboard count.
 - Organizers can add tags from `/admin/tags`; new tags appear in filters and attendee profile forms.
+- Organizers can create badges from `/admin/badges` and award them to attendees via the **Badges** panel on each attendee's edit page (`/admin/attendees/[id]/edit`). Awarded badges are stored in `attendee_badges` and render as `BadgePill`s on the profile page.
 - Avatars upload to the `avatars` bucket; `avatar_file_id` on the attendee references the file. The public view URL is built by `avatarUrl(fileId)` in `lib/appwrite.ts`.
 - The OTP flow uses Appwrite's `Account.createEmailToken` + `Account.createSession` through the server SDK admin client. The session secret is stored in an HTTP-only `a_session_<PROJECT_ID>` cookie and passed back to Appwrite with `setSession()`.
