@@ -1,0 +1,182 @@
+{
+  "projectId": "dtc-pokedex",
+  "projectName": "DTC Pokedex",
+  "endpoint": "https://sgp.cloud.appwrite.io/v1",
+  "tablesDB": [
+    {
+      "$id": "dtc",
+      "name": "DTC",
+      "enabled": true
+    }
+  ],
+  "tables": [
+    {
+      "$id": "attendees",
+      "databaseId": "dtc",
+      "name": "Attendees",
+      "enabled": true,
+      "rowSecurity": true,
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"label:organizer\")",
+        "update(\"label:organizer\")",
+        "delete(\"label:organizer\")"
+      ],
+      "columns": [
+        { "key": "name", "type": "varchar", "size": 200, "required": true, "array": false, "default": null },
+        { "key": "slug", "type": "varchar", "size": 200, "required": true, "array": false, "default": null },
+        { "key": "bio", "type": "varchar", "size": 4000, "required": false, "array": false, "default": "" },
+        { "key": "role_title", "type": "varchar", "size": 200, "required": false, "array": false, "default": "" },
+        { "key": "company", "type": "varchar", "size": 200, "required": false, "array": false, "default": "" },
+        { "key": "location", "type": "varchar", "size": 200, "required": false, "array": false, "default": "" },
+        { "key": "avatar_file_id", "type": "varchar", "size": 100, "required": false, "array": false, "default": "" },
+        { "key": "cover_file_id", "type": "varchar", "size": 100, "required": false, "array": false, "default": "" },
+        { "key": "linkedin_url", "type": "varchar", "size": 500, "required": false, "array": false, "default": "" },
+        { "key": "github_url", "type": "varchar", "size": 500, "required": false, "array": false, "default": "" },
+        { "key": "website_url", "type": "varchar", "size": 500, "required": false, "array": false, "default": "" },
+        { "key": "status", "type": "string", "size": 16, "required": false, "array": false, "default": "active", "format": "enum", "elements": ["active", "archived"] },
+        { "key": "user_id", "type": "varchar", "size": 100, "required": false, "array": false, "default": "" },
+        { "key": "preferred_stack", "type": "varchar", "size": 200, "required": false, "array": false, "default": "" },
+        { "key": "favorite_topic", "type": "varchar", "size": 200, "required": false, "array": false, "default": "" },
+        { "key": "level", "type": "integer", "required": false, "array": false, "min": 1, "max": 99, "default": 1 },
+        { "key": "tag_ids", "type": "varchar", "size": 100, "required": false, "array": true }
+      ],
+      "indexes": [
+        { "key": "slug_unique", "type": "unique", "columns": ["slug"], "orders": ["ASC"] },
+        { "key": "by_status", "type": "key", "columns": ["status"], "orders": ["ASC"] },
+        { "key": "by_user", "type": "key", "columns": ["user_id"], "orders": ["ASC"] },
+        { "key": "by_name", "type": "fulltext", "columns": ["name"] },
+        { "key": "by_company", "type": "fulltext", "columns": ["company"] },
+        { "key": "by_role", "type": "fulltext", "columns": ["role_title"] }
+      ]
+    },
+    {
+      "$id": "tags",
+      "databaseId": "dtc",
+      "name": "Tags",
+      "enabled": true,
+      "rowSecurity": false,
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"label:organizer\")",
+        "update(\"label:organizer\")",
+        "delete(\"label:organizer\")"
+      ],
+      "columns": [
+        { "key": "name", "type": "varchar", "size": 100, "required": true, "array": false, "default": null },
+        { "key": "type", "type": "string", "size": 16, "required": true, "array": false, "format": "enum", "elements": ["skill", "interest", "industry", "topic"], "default": null }
+      ],
+      "indexes": [
+        { "key": "name_unique", "type": "unique", "columns": ["name"], "orders": ["ASC"] },
+        { "key": "by_type", "type": "key", "columns": ["type"], "orders": ["ASC"] }
+      ]
+    },
+    {
+      "$id": "meetups",
+      "databaseId": "dtc",
+      "name": "Meetups",
+      "enabled": true,
+      "rowSecurity": false,
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"label:organizer\")",
+        "update(\"label:organizer\")",
+        "delete(\"label:organizer\")"
+      ],
+      "columns": [
+        { "key": "title", "type": "varchar", "size": 200, "required": true, "array": false, "default": null },
+        { "key": "description", "type": "varchar", "size": 4000, "required": false, "array": false, "default": "" },
+        { "key": "date", "type": "varchar", "size": 10, "required": true, "array": false, "default": null },
+        { "key": "external_url", "type": "varchar", "size": 500, "required": false, "array": false, "default": "" }
+      ],
+      "indexes": [
+        { "key": "by_date", "type": "key", "columns": ["date"], "orders": ["DESC"] }
+      ]
+    },
+    {
+      "$id": "badges",
+      "databaseId": "dtc",
+      "name": "Badges",
+      "enabled": true,
+      "rowSecurity": false,
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"label:organizer\")",
+        "update(\"label:organizer\")",
+        "delete(\"label:organizer\")"
+      ],
+      "columns": [
+        { "key": "name", "type": "varchar", "size": 100, "required": true, "array": false, "default": null },
+        { "key": "description", "type": "varchar", "size": 500, "required": false, "array": false, "default": "" },
+        { "key": "icon", "type": "varchar", "size": 50, "required": false, "array": false, "default": "" },
+        { "key": "rarity", "type": "string", "size": 16, "required": true, "array": false, "format": "enum", "elements": ["common", "rare", "epic", "legendary"], "default": null }
+      ],
+      "indexes": [
+        { "key": "name_unique", "type": "unique", "columns": ["name"], "orders": ["ASC"] }
+      ]
+    },
+    {
+      "$id": "attendee_badges",
+      "databaseId": "dtc",
+      "name": "Attendee Badges",
+      "enabled": true,
+      "rowSecurity": false,
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"label:organizer\")",
+        "update(\"label:organizer\")",
+        "delete(\"label:organizer\")"
+      ],
+      "columns": [
+        { "key": "attendee_id", "type": "varchar", "size": 100, "required": true, "array": false, "default": null },
+        { "key": "badge_id", "type": "varchar", "size": 100, "required": true, "array": false, "default": null },
+        { "key": "awarded_at", "type": "datetime", "required": true, "array": false, "default": null }
+      ],
+      "indexes": [
+        { "key": "by_attendee", "type": "key", "columns": ["attendee_id"], "orders": ["ASC"] },
+        { "key": "by_badge", "type": "key", "columns": ["badge_id"], "orders": ["ASC"] }
+      ]
+    },
+    {
+      "$id": "featured",
+      "databaseId": "dtc",
+      "name": "Featured Attendees",
+      "enabled": true,
+      "rowSecurity": false,
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"label:organizer\")",
+        "update(\"label:organizer\")",
+        "delete(\"label:organizer\")"
+      ],
+      "columns": [
+        { "key": "attendee_id", "type": "varchar", "size": 100, "required": true, "array": false, "default": null },
+        { "key": "start_at", "type": "datetime", "required": true, "array": false, "default": null },
+        { "key": "end_at", "type": "datetime", "required": true, "array": false, "default": null },
+        { "key": "priority", "type": "integer", "required": false, "array": false, "default": 0 }
+      ],
+      "indexes": [
+        { "key": "by_priority", "type": "key", "columns": ["priority"], "orders": ["DESC"] }
+      ]
+    }
+  ],
+  "buckets": [
+    {
+      "$id": "avatars",
+      "name": "Avatars",
+      "enabled": true,
+      "maximumFileSize": 5242880,
+      "allowedFileExtensions": ["jpg", "jpeg", "png", "webp", "gif"],
+      "encryption": false,
+      "antivirus": true,
+      "fileSecurity": false,
+      "compression": "none",
+      "$permissions": [
+        "read(\"any\")",
+        "create(\"users\")",
+        "update(\"label:organizer\")",
+        "delete(\"label:organizer\")"
+      ]
+    }
+  ]
+}
