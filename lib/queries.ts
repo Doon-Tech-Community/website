@@ -270,7 +270,7 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
     slug: a.slug,
     role_title: a.role_title,
     company: a.company,
-    avatar_url: avatarUrl(a.avatar_file_id),
+    avatar_url: avatarUrl(a.avatar_file_id, 56),
     status: a.status,
     tags: a.tag_ids.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t),
     badge_count: badgeCounts.get(a.id) ?? 0
@@ -318,7 +318,7 @@ export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<A
     slug: a.slug,
     role_title: a.role_title,
     company: a.company,
-    avatar_url: avatarUrl(a.avatar_file_id),
+    avatar_url: avatarUrl(a.avatar_file_id, 56),
     status: a.status,
     tags: a.tag_ids.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t),
     badge_count: badgeCounts.get(a.id) ?? 0

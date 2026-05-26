@@ -82,7 +82,7 @@ export default function AttendeeForm({
   }
 
   const currentAvatarUrl = v.avatar_file_id
-    ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_APPWRITE_BUCKET_AVATARS}/files/${v.avatar_file_id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}`
+    ? `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_APPWRITE_BUCKET_AVATARS}/files/${v.avatar_file_id}/preview?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}&width=144&height=144&gravity=center&quality=85&output=webp`
     : "";
 
   return (

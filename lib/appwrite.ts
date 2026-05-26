@@ -79,7 +79,20 @@ export function adminStorage() {
   return new Storage(adminClient());
 }
 
-export function avatarUrl(fileId: string): string {
+export function avatarUrl(fileId: string, size?: number): string {
   if (!fileId) return "";
-  return `${APPWRITE_ENDPOINT}/storage/buckets/${APPWRITE_BUCKET_AVATARS}/files/${fileId}/view?project=${APPWRITE_PROJECT_ID}`;
+  const base = `${APPWRITE_ENDPOINT}/storage/buckets/${APPWRITE_BUCKET_AVATARS}/files/${fileId}`;
+  if (!size) {
+    return `${base}/view?project=${APPWRITE_PROJECT_ID}`;
+  }
+  const px = size * 2;
+  const params = new URLSearchParams({
+    project: APPWRITE_PROJECT_ID,
+    width: String(px),
+    height: String(px),
+    gravity: "center",
+    quality: "85",
+    output: "webp"
+  });
+  return `${base}/preview?${params.toString()}`;
 }

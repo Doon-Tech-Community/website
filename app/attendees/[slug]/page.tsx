@@ -47,7 +47,7 @@ export default async function AttendeePage({ params }: PageProps) {
     badgesForAttendee(a.id),
     relatedAttendees(a)
   ]);
-  const avatar = avatarUrl(a.avatar_file_id);
+  const avatar = avatarUrl(a.avatar_file_id, 120);
 
   return (
     <article className="pt-8 flex flex-col gap-6">
