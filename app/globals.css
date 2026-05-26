@@ -643,6 +643,7 @@ a:hover { color: #1E78A8; }
   html,
   body {
     width: 100%;
+    max-width: 100%;
     min-height: 100%;
     overflow-x: hidden;
     background: var(--shell);
@@ -654,26 +655,39 @@ a:hover { color: #1E78A8; }
   }
 
   .dex-stage {
-    width: 100vw;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     height: 100vh;
-    height: 100dvh;
-    min-height: 100dvh;
+    height: 100svh;
+    min-height: 100vh;
+    min-height: 100svh;
+    max-height: 100vh;
+    max-height: 100svh;
     margin: 0;
     padding: 0;
     perspective: none;
-    overflow-x: hidden;
+    overflow: hidden;
+  }
+
+  .dex-stage.dex-stage {
+    padding: 0;
   }
 
   .dex-shell {
-    width: 100vw;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     height: 100vh;
-    height: 100dvh;
-    min-height: 100dvh;
+    height: 100svh;
+    min-height: 0;
+    max-height: 100vh;
+    max-height: 100svh;
     display: flex;
     flex-direction: column;
     border-radius: 0;
     padding: 12px;
+    overflow: hidden;
     transform: none;
     transform-style: flat;
     will-change: auto;
@@ -745,5 +759,24 @@ a:hover { color: #1E78A8; }
 
   .sound-fab {
     display: none;
+  }
+
+  .speaker-btn[data-muted="false"]::after {
+    top: 1px;
+    right: 1px;
+  }
+}
+
+@supports (height: 100dvh) {
+  @media (max-width: 640px) {
+    .dex-stage,
+    .dex-shell {
+      height: 100dvh;
+      max-height: 100dvh;
+    }
+
+    .dex-stage {
+      min-height: 100dvh;
+    }
   }
 }

@@ -48,7 +48,7 @@ export default async function DexPage({ searchParams }: PageProps) {
           <span aria-hidden>►</span> Doon Tech Community
         </div>
         <h1 className="text-xl sm:text-2xl pixel">THE POKÉDEX</h1>
-        <p className="max-w-2xl">
+        <p className="hidden sm:block max-w-2xl">
           A collectible developer index for every face in the Doon Tech Community. Browse profiles, scan skills, and remember the developers you meet at meetups.
         </p>
       </header>

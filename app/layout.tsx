@@ -72,18 +72,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span className="led led-yel" />
                 <span className="led led-grn" />
               </div>
-              <div className="ml-auto text-right">
-                <Link
-                  href="/"
-                  className="pixel text-[10px] sm:text-xs text-white hover:text-[var(--led-yel)]"
-                  style={{ textShadow: "0 1px 0 rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.35)" }}
-                >
-                  DTC POKÉDEX
-                </Link>
-                <div className="text-white/80 text-sm" style={{ textShadow: "0 1px 0 rgba(0,0,0,0.35)" }}>
-                  v1 · Dehradun
-                </div>
-              </div>
+              <a
+                href="https://chat.whatsapp.com/IV3kpbV3OVz7FJK8htIPa9"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="chip chip-success ml-auto"
+                style={{ fontSize: "0.6rem", padding: "0.5rem 0.7rem" }}
+                aria-label="Join the Doon Tech Community on WhatsApp"
+                title="Join the Doon Tech Community on WhatsApp"
+              >
+                <span className="led led-grn" aria-hidden style={{ width: 8, height: 8 }} />
+                JOIN COMMUNITY
+              </a>
             </div>
 
             <div className="dex-divider mb-4" aria-hidden />
@@ -109,8 +109,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               style={{ textShadow: "0 1px 0 rgba(0,0,0,0.35)" }}
             >
               <PowerButton />
-              <div className="text-center">BUILT WITH ❤ IN DEHRADUN</div>
-              <div className="pixel text-[10px]">© DTC</div>
+              <div className="text-center">v1 · Dehradun</div>
+              <a
+                href="https://github.com/Doon-Tech-Community/website"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="chip"
+                style={{ fontSize: "0.55rem", padding: "0.45rem 0.65rem" }}
+                aria-label="View source on GitHub"
+                title="View source on GitHub"
+              >
+                GITHUB ↗
+              </a>
             </footer>
           </div>
         </div>

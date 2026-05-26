@@ -27,6 +27,7 @@ export default async function LandingPage() {
 
       <p className="max-w-xl text-base sm:text-lg" style={{ fontFamily: "'VT323', monospace" }}>
         A community-built Pokedex for the people shaping tech in Dehradun and the hills.
+        <span className="hidden sm:inline"> Scan developers, track meetups, remember the faces you meet in real life.</span>
       </p>
 
       <dl className="grid grid-cols-2 gap-3 max-w-md w-full">

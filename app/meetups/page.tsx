@@ -17,6 +17,23 @@ export default async function MeetupsPage() {
         <h1 className="text-3xl font-bold tracking-tight">Meetups</h1>
         <p className="text-inkSoft">Every Doon Tech Community gathering, past and upcoming.</p>
       </header>
+      <section className="card-frame rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="flex-1">
+          <h2 className="pixel text-sm">SUBSCRIBE TO EVENT CALENDAR</h2>
+          <p className="text-sm text-inkSoft mt-1">
+            Get every upcoming Doon Tech Community meetup straight in your calendar via Luma.
+          </p>
+        </div>
+        <a
+          href="https://luma.com/doon-tech-community"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-primary"
+          style={{ fontSize: "0.65rem" }}
+        >
+          SUBSCRIBE ON LUMA
+        </a>
+      </section>
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {meetups.map((m) => {
           const upcoming = m.date >= today;
