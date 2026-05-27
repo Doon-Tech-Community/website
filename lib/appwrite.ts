@@ -28,8 +28,8 @@ function baseClient(): Client {
   return new Client().setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
 }
 
-function sessionCookieValue(): string | undefined {
-  const cookieStore = cookies();
+async function sessionCookieValue(): Promise<string | undefined> {
+  const cookieStore = await cookies();
   return cookieStore.get(SESSION_COOKIE)?.value ?? cookieStore.get(LEGACY_SESSION_COOKIE)?.value;
 }
 
@@ -37,9 +37,9 @@ function sessionCookieValue(): string | undefined {
 // Use for "act as the logged-in user" — reads from public tables work
 // without a session; writes require organizer label or matching row
 // permissions.
-export function sessionClient(): Client {
+export async function sessionClient(): Promise<Client> {
   const client = baseClient();
-  const session = sessionCookieValue();
+  const session = await sessionCookieValue();
   if (session) client.setSession(session);
   return client;
 }
@@ -51,20 +51,20 @@ export function adminClient(): Client {
   return baseClient().setKey(env("APPWRITE_API_KEY"));
 }
 
-export function sessionAccount() {
-  return new Account(sessionClient());
+export async function sessionAccount(): Promise<Account> {
+  return new Account(await sessionClient());
 }
 
 export function adminAccount() {
   return new Account(adminClient());
 }
 
-export function sessionTables() {
-  return new TablesDB(sessionClient());
+export async function sessionTables(): Promise<TablesDB> {
+  return new TablesDB(await sessionClient());
 }
 
-export function sessionStorage() {
-  return new Storage(sessionClient());
+export async function sessionStorage(): Promise<Storage> {
+  return new Storage(await sessionClient());
 }
 
 export function adminUsers() {

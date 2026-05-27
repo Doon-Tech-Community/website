@@ -95,7 +95,7 @@ export async function verifyEmailOtp(formData: FormData): Promise<OtpVerifyResul
     if (!session.secret) {
       return { ok: false, error: "Session was created without a server secret." };
     }
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE, session.secret, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -124,12 +124,12 @@ export async function verifyEmailOtp(formData: FormData): Promise<OtpVerifyResul
 }
 
 export async function logout(): Promise<void> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const session =
     cookieStore.get(SESSION_COOKIE)?.value ?? cookieStore.get(LEGACY_SESSION_COOKIE)?.value;
   if (session) {
     try {
-      await sessionAccount().deleteSession({ sessionId: "current" });
+      await (await sessionAccount()).deleteSession({ sessionId: "current" });
     } catch {
       // Best-effort; clear the cookie either way.
     }
@@ -333,7 +333,7 @@ async function syncUserName(userId: string | undefined, name: string, currentUse
   if (!userId || !cleanName) return;
 
   if (userId === currentUserId) {
-    await sessionAccount().updateName({ name: cleanName });
+    await (await sessionAccount()).updateName({ name: cleanName });
     return;
   }
 

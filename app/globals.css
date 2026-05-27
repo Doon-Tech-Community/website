@@ -1165,7 +1165,11 @@ a:hover { color: #1E78A8; }
     min-height: 100vh;
     max-height: 100vh;
     /* Was 24px / 80px — trimmed to give the LCD more vertical room. */
-    padding: 14px 0 56px;
+    padding: 14px 0 28px;
+    /* The chassis stays centered with this much room around it, regardless
+       of how wide the viewport is. Tune here to change the side margin
+       ratio on large screens. */
+    max-width: 768px;
   }
 
   .dex-shell {
@@ -1187,22 +1191,38 @@ a:hover { color: #1E78A8; }
   /* Squeeze the inter-section gaps so the LCD claims the slack. */
   .device-topbar {
     margin-bottom: 10px;
+    /* Inset so the lens and community chip clear the corner-screw decoration. */
+    padding-inline: 20px;
   }
 
   .dex-shell .device-screen {
-    margin-top: 10px;
+    /* Larger gap between the Nav row and the LCD so the buttons feel
+       separated from the screen. */
+    margin-top: 20px;
   }
 
   .device-controls {
-    margin-top: 10px;
+    /* More breathing room between the LCD and the D-pad row. */
+    margin-top: 20px;
+  }
+
+  /* Shrink the chrome eye on desktop so the topbar isn't so tall.
+     Bezel ring offsets are unchanged so the lens still reads as the same
+     style — just smaller. */
+  .led-lens {
+    width: 44px;
+    height: 44px;
   }
 
   .device-divider--bottom {
-    margin-top: 10px;
+    margin-top: 6px;
   }
 
   .device-footer {
-    margin-top: 8px;
+    margin-top: 4px;
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
   }
 
   /* Smaller decorative seam so it stays under the (now-tighter) topbar. */

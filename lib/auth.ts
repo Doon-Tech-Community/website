@@ -11,7 +11,7 @@ export interface CurrentUser {
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   try {
-    const user = await sessionAccount().get();
+    const user = await (await sessionAccount()).get();
     return {
       id: user.$id,
       email: user.email,

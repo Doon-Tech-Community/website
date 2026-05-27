@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/events`, lastModified: now, changeFrequency: "weekly", priority: 0.8 }
   ];
 
-  const res = await sessionTables().listRows({
+  const res = await (await sessionTables()).listRows({
     databaseId: APPWRITE_DATABASE_ID,
     tableId: TABLES.attendees,
     queries: [Query.equal("status", "active"), Query.limit(500)]

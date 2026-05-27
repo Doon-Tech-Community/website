@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
 
-        <div className="mx-auto max-w-6xl px-2 sm:px-4 lg:px-6 py-4 sm:py-6 dex-stage">
+        <div className="mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 dex-stage">
           <div className="dex-shell">
             <div className="device-topbar flex items-center gap-4 mb-4">
               <Link href="/" aria-label="Back to landing" className="shrink-0">

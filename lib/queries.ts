@@ -78,7 +78,7 @@ function mapBadge(d: Row & Record<string, unknown>): Badge {
 }
 
 export async function getAttendeeBySlug(slug: string): Promise<Attendee | null> {
-  const dbx = sessionTables();
+  const dbx = (await sessionTables());
   const res = await dbx.listRows({
     databaseId: db,
     tableId: TABLES.attendees,
@@ -90,7 +90,7 @@ export async function getAttendeeBySlug(slug: string): Promise<Attendee | null> 
 
 export async function getAttendeeById(id: string): Promise<Attendee | null> {
   try {
-    const d = await sessionTables().getRow({
+    const d = await (await sessionTables()).getRow({
       databaseId: db,
       tableId: TABLES.attendees,
       rowId: id
@@ -122,7 +122,7 @@ export async function hasAttendeeForUser(userId: string): Promise<boolean> {
 }
 
 export async function listAllTags(): Promise<Tag[]> {
-  const res = await sessionTables().listRows({
+  const res = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.tags,
     queries: [Query.orderAsc("name"), Query.limit(200)]
@@ -133,7 +133,7 @@ export async function listAllTags(): Promise<Tag[]> {
 async function getTagsByIds(ids: string[]): Promise<Tag[]> {
   if (ids.length === 0) return [];
   const unique = Array.from(new Set(ids));
-  const res = await sessionTables().listRows({
+  const res = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.tags,
     queries: [Query.equal("$id", unique), Query.limit(unique.length)]
@@ -142,7 +142,7 @@ async function getTagsByIds(ids: string[]): Promise<Tag[]> {
 }
 
 export async function listAllMeetups(): Promise<Meetup[]> {
-  const res = await sessionTables().listRows({
+  const res = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.events,
     queries: [Query.orderDesc("date"), Query.limit(200)]
@@ -151,7 +151,7 @@ export async function listAllMeetups(): Promise<Meetup[]> {
 }
 
 export async function listAllBadges(): Promise<Badge[]> {
-  const res = await sessionTables().listRows({
+  const res = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.badges,
     queries: [Query.orderAsc("name"), Query.limit(200)]
@@ -168,7 +168,7 @@ async function badgeStatsFor(attendeeIds: string[]): Promise<Map<string, BadgeSt
   const stats = new Map<string, BadgeStats>();
   if (attendeeIds.length === 0) return stats;
 
-  const linksRes = await sessionTables().listRows({
+  const linksRes = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.attendee_badges,
     queries: [Query.equal("attendee_id", attendeeIds), Query.limit(1000)]
@@ -177,7 +177,7 @@ async function badgeStatsFor(attendeeIds: string[]): Promise<Map<string, BadgeSt
   if (links.length === 0) return stats;
 
   const badgeIds = Array.from(new Set(links.map((l) => l.badge_id)));
-  const badgesRes = await sessionTables().listRows({
+  const badgesRes = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.badges,
     queries: [Query.equal("$id", badgeIds), Query.limit(badgeIds.length)]
@@ -204,7 +204,7 @@ async function listRowsForComputedLevelSort(queries: string[]): Promise<{
   rows: Array<Row & Record<string, unknown>>;
   total: number;
 }> {
-  const dbx = sessionTables();
+  const dbx = (await sessionTables());
   const rows: Array<Row & Record<string, unknown>> = [];
   const batchSize = 100;
   const maxRows = 1000;
@@ -227,7 +227,7 @@ async function listRowsForComputedLevelSort(queries: string[]): Promise<{
 export async function badgesForAttendee(
   attendeeId: string
 ): Promise<Array<Badge & { awarded_at: string }>> {
-  const dbx = sessionTables();
+  const dbx = (await sessionTables());
   const linksRes = await dbx.listRows({
     databaseId: db,
     tableId: TABLES.attendee_badges,
@@ -323,7 +323,7 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
     if (sort === "recent") queries.push(Query.orderDesc("$updatedAt"));
     else queries.push(Query.orderAsc("name"));
 
-    const res = await sessionTables().listRows({
+    const res = await (await sessionTables()).listRows({
       databaseId: db,
       tableId: TABLES.attendees,
       queries
@@ -372,7 +372,7 @@ export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<A
     Query.or(attendee.tag_ids.map((tid) => Query.contains("tag_ids", tid))),
     Query.limit(20)
   ];
-  const res = await sessionTables().listRows({
+  const res = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.attendees,
     queries
@@ -409,7 +409,7 @@ export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<A
 }
 
 export async function countActiveAttendees(): Promise<number> {
-  const res = await sessionTables().listRows({
+  const res = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.attendees,
     queries: [Query.equal("status", "active"), Query.limit(1)]
@@ -418,7 +418,7 @@ export async function countActiveAttendees(): Promise<number> {
 }
 
 export async function countMeetups(): Promise<number> {
-  const res = await sessionTables().listRows({
+  const res = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.events,
     queries: [Query.limit(1)]
@@ -427,7 +427,7 @@ export async function countMeetups(): Promise<number> {
 }
 
 export async function countTags(): Promise<number> {
-  const res = await sessionTables().listRows({
+  const res = await (await sessionTables()).listRows({
     databaseId: db,
     tableId: TABLES.tags,
     queries: [Query.limit(1)]

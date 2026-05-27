@@ -42,13 +42,13 @@ export default async function DexPage({ searchParams }: PageProps) {
   if (sort !== "name") qp.set("sort", sort);
 
   return (
-    <div className="dex-page pt-8 flex flex-col gap-6">
-      <header className="dex-page__header flex flex-col gap-2">
+    <div className="dex-page pt-4 sm:pt-5 flex flex-col gap-4">
+      <header className="dex-page__header flex flex-col gap-1.5">
         <div className="dex-page__eyebrow flex items-center gap-2 text-[0.6rem] uppercase tracking-widest text-accent pixel">
           <span aria-hidden>►</span> Doon Tech Community
         </div>
-        <h1 className="dex-page__title text-xl sm:text-2xl pixel">THE POKÉDEX</h1>
-        <p className="hidden sm:block max-w-2xl">
+        <h1 className="dex-page__title text-lg sm:text-xl xl:text-2xl pixel">THE POKÉDEX</h1>
+        <p className="hidden sm:block max-w-3xl text-sm xl:text-base">
           A collectible developer index for every face in the Doon Tech Community. Browse profiles, scan skills, and remember the developers you meet at events.
         </p>
       </header>
@@ -68,7 +68,7 @@ export default async function DexPage({ searchParams }: PageProps) {
           <p className="text-sm text-inkSoft">Try clearing filters or check back after the next event.</p>
         </div>
       ) : (
-        <ul className="attendee-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <ul className="attendee-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
           {items.map((a) => (
             <li key={a.id}>
               <AttendeeCard a={a} />
