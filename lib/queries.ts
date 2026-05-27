@@ -208,30 +208,6 @@ async function badgeStatsFor(attendeeIds: string[]): Promise<Map<string, BadgeSt
   return stats;
 }
 
-async function listRowsForComputedLevelSort(queries: string[]): Promise<{
-  rows: Array<Row & Record<string, unknown>>;
-  total: number;
-}> {
-  const dbx = (await sessionTables());
-  const rows: Array<Row & Record<string, unknown>> = [];
-  const batchSize = 100;
-  const maxRows = 1000;
-  let total = 0;
-
-  while (rows.length < maxRows) {
-    const res = await dbx.listRows({
-      databaseId: db,
-      tableId: TABLES.attendees,
-      queries: [...queries, Query.limit(batchSize), Query.offset(rows.length)]
-    });
-    total = res.total;
-    rows.push(...(res.rows as Array<Row & Record<string, unknown>>));
-    if (rows.length >= res.total || res.rows.length < batchSize) break;
-  }
-
-  return { rows, total };
-}
-
 export async function badgesForAttendee(
   attendeeId: string
 ): Promise<Array<Badge & { awarded_at: string }>> {
@@ -264,8 +240,8 @@ export interface ListAttendeesParams {
   q?: string;
   badge?: string[];
   role?: string;
-  sort?: "name" | "level" | "recent";
-  page?: number;
+  sort?: "name" | "recent";
+  cursor?: string;
   pageSize?: number;
   includeArchived?: boolean;
 }
@@ -273,12 +249,10 @@ export interface ListAttendeesParams {
 export interface ListAttendeesResult {
   items: AttendeeListItem[];
   total: number;
-  page: number;
-  pageSize: number;
+  nextCursor: string | null;
 }
 
 export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAttendeesResult> {
-  const page = Math.max(1, p.page ?? 1);
   const pageSize = Math.max(1, Math.min(60, p.pageSize ?? 24));
   const filters: string[] = [];
 
@@ -303,7 +277,7 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
       .filter((x): x is string => !!x);
 
     if (badgeIds.length === 0) {
-      return { items: [], total: 0, page, pageSize };
+      return { items: [], total: 0, nextCursor: null };
     }
 
     // AND semantics: an attendee must have every selected badge.
@@ -324,54 +298,35 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
       .map(([id]) => id);
 
     if (matchingIds.length === 0) {
-      return { items: [], total: 0, page, pageSize };
+      return { items: [], total: 0, nextCursor: null };
     }
 
     filters.push(Query.equal("$id", matchingIds));
   }
 
   const sort = p.sort ?? "name";
-  let attendees: Attendee[];
-  let total: number;
-  let scoresById = new Map<string, LevelScore>();
-  let statsById = new Map<string, BadgeStats>();
+  // Fetch one extra row to detect whether more results exist after this page.
+  const queries = [...filters, Query.limit(pageSize + 1)];
+  if (p.cursor) queries.push(Query.cursorAfter(p.cursor));
+  if (sort === "recent") queries.push(Query.orderDesc("$updatedAt"));
+  else queries.push(Query.orderAsc("name"));
 
-  if (sort === "level") {
-    const res = await listRowsForComputedLevelSort(filters);
-    const allAttendees = res.rows.map((d) => mapAttendee(d));
-    statsById = await badgeStatsFor(allAttendees.map((a) => a.id));
-    const scored = allAttendees.map((a) => {
-      const score = calculateLevelScore(a, statsById.get(a.id)?.rarities ?? []);
-      scoresById.set(a.id, score);
-      return { attendee: a, score };
-    });
-    scored.sort((a, b) => {
-      if (b.score.level !== a.score.level) return b.score.level - a.score.level;
-      if (b.score.xp !== a.score.xp) return b.score.xp - a.score.xp;
-      return a.attendee.name.localeCompare(b.attendee.name);
-    });
-    total = res.total;
-    attendees = scored.slice((page - 1) * pageSize, page * pageSize).map((s) => s.attendee);
-  } else {
-    const queries = [...filters, Query.limit(pageSize), Query.offset((page - 1) * pageSize)];
-    if (sort === "recent") queries.push(Query.orderDesc("$updatedAt"));
-    else queries.push(Query.orderAsc("name"));
-
-    const res = await (await sessionTables()).listRows({
-      databaseId: db,
-      tableId: TABLES.attendees,
-      queries
-    });
-    total = res.total;
-    attendees = res.rows.map((d) => mapAttendee(d as Row & Record<string, unknown>));
-    statsById = await badgeStatsFor(attendees.map((a) => a.id));
-    scoresById = new Map(
-      attendees.map((a) => [
-        a.id,
-        calculateLevelScore(a, statsById.get(a.id)?.rarities ?? [])
-      ])
-    );
-  }
+  const res = await (await sessionTables()).listRows({
+    databaseId: db,
+    tableId: TABLES.attendees,
+    queries
+  });
+  const total = res.total;
+  const fetched = res.rows.map((d) => mapAttendee(d as Row & Record<string, unknown>));
+  const hasMore = fetched.length > pageSize;
+  const attendees = hasMore ? fetched.slice(0, pageSize) : fetched;
+  const statsById = await badgeStatsFor(attendees.map((a) => a.id));
+  const scoresById = new Map<string, LevelScore>(
+    attendees.map((a) => [
+      a.id,
+      calculateLevelScore(a, statsById.get(a.id)?.rarities ?? [])
+    ])
+  );
 
   const allTagIds = Array.from(new Set(attendees.flatMap((a) => a.tag_ids)));
   const tags = await getTagsByIds(allTagIds);
@@ -392,7 +347,8 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
     user_id: a.user_id
   }));
 
-  return { items, total, page, pageSize };
+  const nextCursor = hasMore && attendees.length > 0 ? attendees[attendees.length - 1].id : null;
+  return { items, total, nextCursor };
 }
 
 export async function tagsForAttendee(attendee: Attendee): Promise<Tag[]> {
