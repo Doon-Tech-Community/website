@@ -91,7 +91,7 @@ export async function verifyEmailOtp(formData: FormData): Promise<OtpVerifyResul
     cookieStore.set(SESSION_COOKIE, session.secret, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
       expires: new Date(session.expire)
     });
