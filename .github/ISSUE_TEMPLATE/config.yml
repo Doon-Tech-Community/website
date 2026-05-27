@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Doon Tech Community
+    url: https://doontech.in/
+    about: For community questions that are not tied to this codebase, use the community's normal channels.

@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest an improvement or new capability for the DTC Pokedex.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: Who needs this, and what are they trying to do?
+      placeholder: Organizers need a faster way to...
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed solution
+      description: Describe the experience or behavior you want.
+      placeholder: Add a control that lets organizers...
+    validations:
+      required: true
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Primary audience
+      options:
+        - Community attendee
+        - Community organizer
+        - Newcomer
+        - Contributor or maintainer
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope notes
+      description: Mention any Appwrite schema, auth, admin, or data migration impact.
+      placeholder: This may need a new table/column, organizer-only action, or public route.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional. Any simpler version, workaround, or tradeoff worth noting?
