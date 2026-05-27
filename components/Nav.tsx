@@ -8,7 +8,17 @@ import Link from "next/link";
 
 export default async function Nav() {
   const [user, organizer] = await Promise.all([getCurrentUser(), isOrganizer()]);
-  const attendee = user ? (await listAttendeesForUser(user.id, 1))[0] : null;
+  // Best-effort lookup for nav display only. If Appwrite hiccups (e.g. a
+  // transient "fetch failed" right after a server action), fall back to the
+  // raw user fields instead of crashing the whole layout.
+  let attendee: Awaited<ReturnType<typeof listAttendeesForUser>>[number] | null = null;
+  if (user) {
+    try {
+      attendee = (await listAttendeesForUser(user.id, 1))[0] ?? null;
+    } catch {
+      attendee = null;
+    }
+  }
   const profileName = attendee?.name || user?.name || user?.email.split("@")[0] || "Account";
   const profileAvatarUrl = attendee ? avatarUrl(attendee.avatar_file_id, 32) : "";
 

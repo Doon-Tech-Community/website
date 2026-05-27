@@ -2,17 +2,19 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import BadgePill from "@/components/BadgePill";
-import { createBadge, seedSpeakerBadge } from "@/lib/actions";
+import { createBadge, deleteBadge, seedSpeakerBadge } from "@/lib/actions";
 import type { Badge, Rarity } from "@/lib/types";
 
 const RARITIES: Rarity[] = ["common", "rare", "epic", "legendary"];
 
 export default function BadgesAdmin({
   badges,
-  hasSpeaker
+  hasSpeaker,
+  assignmentCounts
 }: {
   badges: Badge[];
   hasSpeaker: boolean;
+  assignmentCounts: Record<string, number>;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -44,6 +46,28 @@ export default function BadgesAdmin({
         router.refresh();
       } catch (e) {
         setError((e as Error).message || "Failed to create badge.");
+      }
+    });
+  }
+
+  function remove(id: string, name: string) {
+    const count = assignmentCounts[id] ?? 0;
+    const warning =
+      count > 0
+        ? `Delete the "${name}" badge type? It's currently awarded to ${count} ${count === 1 ? "person" : "people"} — they'll lose this badge and have their level recomputed.`
+        : `Delete the "${name}" badge type?`;
+    if (!confirm(warning)) return;
+    setError(null);
+    start(async () => {
+      try {
+        const r = await deleteBadge(id);
+        if (!r.ok) {
+          setError(r.error || "Failed to delete badge.");
+          return;
+        }
+        router.refresh();
+      } catch (e) {
+        setError((e as Error).message || "Failed to delete badge.");
       }
     });
   }
@@ -89,22 +113,38 @@ export default function BadgesAdmin({
           <p className="text-sm text-inkSoft">No badges yet. Create your first one below.</p>
         ) : (
           <ul className="flex flex-col divide-y divide-white/5">
-            {badges.map((b) => (
-              <li key={b.id} className="py-2 flex items-start gap-3">
-                <div className="text-2xl leading-none w-8 text-center" aria-hidden>
-                  {b.icon || "🏅"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold">{b.name}</span>
-                    <BadgePill name={b.rarity} rarity={b.rarity} />
+            {badges.map((b) => {
+              const count = assignmentCounts[b.id] ?? 0;
+              return (
+                <li key={b.id} className="py-2 flex items-start gap-3">
+                  <div className="text-2xl leading-none w-8 text-center" aria-hidden>
+                    {b.icon || "🏅"}
                   </div>
-                  {b.description && (
-                    <p className="text-sm text-slate-300 mt-0.5">{b.description}</p>
-                  )}
-                </div>
-              </li>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold">{b.name}</span>
+                      <BadgePill name={b.rarity} rarity={b.rarity} />
+                      {count > 0 && (
+                        <span className="text-xs text-slate-400">
+                          awarded to {count}
+                        </span>
+                      )}
+                    </div>
+                    {b.description && (
+                      <p className="text-sm text-slate-300 mt-0.5">{b.description}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => remove(b.id, b.name)}
+                    disabled={pending}
+                    className="btn btn-danger !py-1 !px-2 text-xs"
+                  >
+                    Delete
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

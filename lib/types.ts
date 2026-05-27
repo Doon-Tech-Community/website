@@ -69,4 +69,5 @@ export interface AttendeeListItem {
   tags: Tag[];
   level: number;
   badge_count: number;
+  user_id: string;
 }

@@ -133,7 +133,7 @@ components/
   Nav, NavLinks, AttendeeCard, AttendeeForm, OrganizerAuthButton
   Avatar, TagChip, BadgePill, FiltersBar
   PokedexTilt, PowerButton, DeviceControls, SoundProvider
-  (admin: BadgesAdmin, EventsAdmin, TagsAdmin, OrganizerAccessAdmin, AdminAttendeesTable)
+  (admin: BadgesAdmin, EventsAdmin, TagsAdmin, AdminAttendeesTable)
 lib/
   appwrite.ts (server clients, IDs, helpers)
   auth.ts (getCurrentUser, isOrganizer, requireOrganizer)

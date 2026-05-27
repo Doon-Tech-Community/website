@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { Query } from "node-appwrite";
 import { isOrganizer, getCurrentUser } from "@/lib/auth";
+import { adminUsers } from "@/lib/appwrite";
 import { countActiveAttendees, countMeetups, countTags, listAttendees } from "@/lib/queries";
 import AdminAttendeesTable from "./AdminAttendeesTable";
-import OrganizerAccessAdmin from "./OrganizerAccessAdmin";
 import OrganizerAuthButton from "@/components/OrganizerAuthButton";
 
 export const metadata = { title: "Organizer dashboard", robots: { index: false } };
@@ -24,12 +25,21 @@ export default async function AdminPage() {
     );
   }
 
-  const [{ items: attendees }, attendeeCount, meetupCount, tagCount] = await Promise.all([
-    listAttendees({ pageSize: 60, includeArchived: true, sort: "name" }),
-    countActiveAttendees(),
-    countMeetups(),
-    countTags()
-  ]);
+  const [{ items: attendees }, attendeeCount, meetupCount, tagCount, allUsersRes] =
+    await Promise.all([
+      listAttendees({ pageSize: 60, includeArchived: true, sort: "name" }),
+      countActiveAttendees(),
+      countMeetups(),
+      countTags(),
+      // Fetch all users and filter labels in code. Querying labels server-side
+      // (Query.contains) doesn't reliably reflect updates from updateLabels,
+      // so the chip would lag behind Make/Remove organizer clicks.
+      adminUsers().list({ queries: [Query.limit(500)] })
+    ]);
+
+  const organizerUserIds = new Set(
+    allUsersRes.users.filter((u) => (u.labels ?? []).includes("organizer")).map((u) => u.$id)
+  );
 
   return (
     <div className="pt-8 flex flex-col gap-6">
@@ -53,8 +63,6 @@ export default async function AdminPage() {
         <Stat label="Tags" value={tagCount} />
       </section>
 
-      <OrganizerAccessAdmin />
-
       <AdminAttendeesTable
         attendees={attendees.map((a) => ({
           id: a.id,
@@ -62,7 +70,9 @@ export default async function AdminPage() {
           slug: a.slug,
           role_title: a.role_title,
           company: a.company,
-          status: a.status
+          status: a.status,
+          user_id: a.user_id,
+          is_organizer: !!a.user_id && organizerUserIds.has(a.user_id)
         }))}
       />
     </div>

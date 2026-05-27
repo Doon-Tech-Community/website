@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import BadgePill from "@/components/BadgePill";
 import { assignBadgeToAttendee, unassignAttendeeBadge } from "@/lib/actions";
 import type { Badge } from "@/lib/types";
@@ -32,6 +32,15 @@ export default function AttendeeBadgesPanel({
     const taken = new Set(assigned.map((a) => a.id));
     return allBadges.filter((b) => !taken.has(b.id));
   }, [allBadges, assigned]);
+
+  // After router.refresh, the just-awarded badge moves out of `available`
+  // but `pick` still points to it. Reset to the next available badge so the
+  // user can award another one without a manual reload.
+  useEffect(() => {
+    if (pick && !available.some((b) => b.id === pick)) {
+      setPick(available[0]?.id ?? "");
+    }
+  }, [available, pick]);
 
   function assign() {
     if (!pick) return;

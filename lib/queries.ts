@@ -353,7 +353,8 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
     status: a.status,
     tags: a.tag_ids.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t),
     level: scoresById.get(a.id)?.level ?? a.level,
-    badge_count: statsById.get(a.id)?.count ?? 0
+    badge_count: statsById.get(a.id)?.count ?? 0,
+    user_id: a.user_id
   }));
 
   return { items, total, page, pageSize };
@@ -402,7 +403,8 @@ export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<A
     status: a.status,
     tags: a.tag_ids.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t),
     level: calculateLevelScore(a, badgeStats.get(a.id)?.rarities ?? []).level,
-    badge_count: badgeStats.get(a.id)?.count ?? 0
+    badge_count: badgeStats.get(a.id)?.count ?? 0,
+    user_id: a.user_id
   }));
 }
 

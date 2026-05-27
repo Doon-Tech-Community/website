@@ -196,6 +196,57 @@ export async function grantOrganizerLabel(formData: FormData): Promise<GrantOrga
   }
 }
 
+export async function revokeOrganizerLabel(formData: FormData): Promise<GrantOrganizerResult> {
+  const current = await getCurrentUser();
+  if (!current || !current.labels.includes("organizer")) {
+    return { ok: false, error: "Not allowed." };
+  }
+
+  const lookup = sanitize(formData.get("lookup"), 254).trim();
+  if (!lookup) return { ok: false, error: "User ID or email is required." };
+
+  try {
+    const users = adminUsers();
+    const target = lookup.includes("@")
+      ? (await users.list({
+          queries: [Query.equal("email", lookup.toLowerCase()), Query.limit(2)],
+          total: false
+        })).users[0]
+      : await users.get({ userId: lookup });
+
+    if (!target) return { ok: false, error: "User not found." };
+
+    // Self-protection: prevent an organizer from accidentally locking
+    // themselves out of the admin. Another organizer has to do it.
+    if (target.$id === current.id) {
+      return { ok: false, error: "You can't revoke your own organizer access." };
+    }
+
+    const labels = (target.labels ?? []).filter((l) => l !== "organizer");
+    const alreadyOrganizer = (target.labels ?? []).includes("organizer");
+    if (alreadyOrganizer) {
+      await users.updateLabels({
+        userId: target.$id,
+        labels
+      });
+    }
+
+    revalidatePath("/admin");
+    revalidatePath("/profile");
+    return {
+      ok: true,
+      user: {
+        id: target.$id,
+        email: target.email,
+        name: target.name,
+        alreadyOrganizer
+      }
+    };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message || "Failed to update organizer label." };
+  }
+}
+
 // ===== Attendee CRUD =====
 
 export interface AttendeeFormPayload {
@@ -936,6 +987,52 @@ export async function assignBadgeToAttendee(
   return { ok: true };
 }
 
+export async function deleteBadge(
+  badgeId: string
+): Promise<{ ok: boolean; error?: string }> {
+  const u = await getCurrentUser();
+  if (!u || !u.labels.includes("organizer")) return { ok: false, error: "Not allowed." };
+  const dbx = adminTables();
+  try {
+    // Find every assignment of this badge and the attendees they touch
+    // so we can cascade-delete and recompute their levels after.
+    const links = await dbx.listRows({
+      databaseId: db,
+      tableId: TABLES.attendee_badges,
+      queries: [Query.equal("badge_id", badgeId), Query.limit(500)]
+    });
+    const linkRows = links.rows as unknown as Array<{ $id: string; attendee_id: string }>;
+    const affectedAttendeeIds = Array.from(new Set(linkRows.map((l) => l.attendee_id)));
+
+    await Promise.all(
+      linkRows.map((l) =>
+        dbx.deleteRow({
+          databaseId: db,
+          tableId: TABLES.attendee_badges,
+          rowId: l.$id
+        })
+      )
+    );
+
+    await dbx.deleteRow({
+      databaseId: db,
+      tableId: TABLES.badges,
+      rowId: badgeId
+    });
+
+    await Promise.all(
+      affectedAttendeeIds.map((id) => recomputeAttendeeLevel(id).catch(() => {}))
+    );
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/badges");
+    revalidatePath("/dex");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message || "Failed to delete badge." };
+  }
+}
+
 export async function unassignAttendeeBadge(
   attendeeBadgeId: string
 ): Promise<{ ok: boolean; error?: string }> {
@@ -967,7 +1064,15 @@ export async function unassignAttendeeBadge(
     tableId: TABLES.attendee_badges,
     rowId: attendeeBadgeId
   });
-  if (attendeeId) await recomputeAttendeeLevel(attendeeId);
+  // Level recompute is best-effort. The link row is already deleted, so a
+  // transient Appwrite blip here shouldn't surface as a failure to the user.
+  if (attendeeId) {
+    try {
+      await recomputeAttendeeLevel(attendeeId);
+    } catch {
+      /* level will catch up on the next badge change or edit */
+    }
+  }
   if (slug) revalidatePath(`/attendees/${slug}`);
   revalidatePath("/dex");
   revalidatePath("/admin");
