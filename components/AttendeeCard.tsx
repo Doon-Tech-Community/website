@@ -7,7 +7,7 @@ export default function AttendeeCard({ a }: { a: AttendeeListItem }) {
   return (
     <Link
       href={`/attendees/${a.slug}`}
-      className="attendee-card card-frame rounded-2xl p-4 flex flex-col gap-3 group"
+      className="attendee-card card-frame rounded-2xl p-4 h-full flex flex-col gap-3 group"
       aria-label={`${a.name}, ${a.role_title || "member"}`}
     >
       <div className="flex items-start gap-3">
