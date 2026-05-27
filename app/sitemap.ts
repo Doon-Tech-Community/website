@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { Query } from "node-appwrite";
-import { APPWRITE_DATABASE_ID, COLLECTIONS, sessionTables } from "@/lib/appwrite";
+import { APPWRITE_DATABASE_ID, TABLES, sessionTables } from "@/lib/appwrite";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const res = await sessionTables().listRows({
     databaseId: APPWRITE_DATABASE_ID,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     queries: [Query.equal("status", "active"), Query.limit(500)]
   });
   const attendees: MetadataRoute.Sitemap = res.rows.map((d) => ({

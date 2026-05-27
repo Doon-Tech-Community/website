@@ -9,7 +9,7 @@ import {
   APPWRITE_DATABASE_ID,
   APPWRITE_ENDPOINT,
   APPWRITE_PROJECT_ID,
-  COLLECTIONS,
+  TABLES,
   LEGACY_SESSION_COOKIE,
   SESSION_COOKIE,
   adminAccount,
@@ -215,12 +215,12 @@ async function canEditAttendee(attendeeId: string | undefined): Promise<{
   if (isOrg) return { allowed: true, isOrganizer: true, userId: u.id };
   if (!attendeeId) return { allowed: false, isOrganizer: false, userId: u.id };
   try {
-    const doc = await adminTables().getRow({
+    const row = await adminTables().getRow({
       databaseId: db,
-      tableId: COLLECTIONS.attendees,
+      tableId: TABLES.attendees,
       rowId: attendeeId
     });
-    const ownerId = (doc as unknown as { user_id?: string }).user_id ?? "";
+    const ownerId = (row as unknown as { user_id?: string }).user_id ?? "";
     return { allowed: ownerId === u.id, isOrganizer: false, userId: u.id };
   } catch {
     return { allowed: false, isOrganizer: false, userId: u.id };
@@ -236,7 +236,7 @@ async function ensureUniqueSlug(base: string, ignoreId?: string): Promise<string
   for (let attempts = 0; attempts < 100; attempts++) {
     const res = await dbx.listRows({
       databaseId: db,
-      tableId: COLLECTIONS.attendees,
+      tableId: TABLES.attendees,
       queries: [Query.equal("slug", slug), Query.limit(2)]
     });
     const taken = res.rows.find((d) => d.$id !== ignoreId);
@@ -289,7 +289,7 @@ async function badgeRaritiesForAttendee(attendeeId: string): Promise<Rarity[]> {
   const dbx = adminTables();
   const links = await dbx.listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendee_badges,
+    tableId: TABLES.attendee_badges,
     queries: [Query.equal("attendee_id", attendeeId), Query.limit(500)]
   });
   const badgeIds = Array.from(
@@ -299,7 +299,7 @@ async function badgeRaritiesForAttendee(attendeeId: string): Promise<Rarity[]> {
 
   const badges = await dbx.listRows({
     databaseId: db,
-    tableId: COLLECTIONS.badges,
+    tableId: TABLES.badges,
     queries: [Query.equal("$id", badgeIds), Query.limit(badgeIds.length)]
   });
   return badges.rows.map(
@@ -311,7 +311,7 @@ async function recomputeAttendeeLevel(attendeeId: string): Promise<void> {
   const dbx = adminTables();
   const attendee = await dbx.getRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: attendeeId
   });
   const rarities = await badgeRaritiesForAttendee(attendeeId);
@@ -323,7 +323,7 @@ async function recomputeAttendeeLevel(attendeeId: string): Promise<void> {
   if (Number((attendee as unknown as { level?: number }).level ?? 1) !== score.level) {
     await dbx.updateRow({
       databaseId: db,
-      tableId: COLLECTIONS.attendees,
+      tableId: TABLES.attendees,
       rowId: attendeeId,
       data: { level: score.level }
     });
@@ -339,7 +339,7 @@ export async function createMyAttendeeProfile(
   const dbx = adminTables();
   const existing = await dbx.listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     queries: [Query.equal("user_id", u.id), Query.limit(1)]
   });
   if (existing.rows[0]) {
@@ -377,20 +377,20 @@ export async function createMyAttendeeProfile(
     level: calculateLevelScore(cleanLevelInput(data, createdAt), []).level
   };
 
-  const doc = await dbx.createRow({
+  const row = await dbx.createRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: ID.unique(),
     data: dataWithLevel,
     permissions: attendeePermissions(u.id)
   });
-  await recomputeAttendeeLevel(doc.$id);
+  await recomputeAttendeeLevel(row.$id);
   await syncUserName(u.id, name, u.id);
   revalidatePath("/");
   revalidatePath("/dex");
   revalidatePath("/admin");
   revalidatePath("/profile");
-  return { ok: true, slug: (doc as unknown as { slug: string }).slug };
+  return { ok: true, slug: (row as unknown as { slug: string }).slug };
 }
 
 export async function createAttendee(payload: AttendeeFormPayload): Promise<SaveAttendeeResult> {
@@ -428,18 +428,18 @@ export async function createAttendee(payload: AttendeeFormPayload): Promise<Save
     level: calculateLevelScore(cleanLevelInput(data, createdAt), []).level
   };
 
-  const doc = await adminTables().createRow({
+  const row = await adminTables().createRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: ID.unique(),
     data: dataWithLevel,
     permissions: attendeePermissions(data.user_id)
   });
-  await recomputeAttendeeLevel(doc.$id);
+  await recomputeAttendeeLevel(row.$id);
   await syncUserName(data.user_id, name, u.id);
   revalidatePath("/dex");
   revalidatePath("/admin");
-  return { ok: true, slug: (doc as unknown as { slug: string }).slug };
+  return { ok: true, slug: (row as unknown as { slug: string }).slug };
 }
 
 export async function updateAttendee(payload: AttendeeFormPayload): Promise<SaveAttendeeResult> {
@@ -450,7 +450,7 @@ export async function updateAttendee(payload: AttendeeFormPayload): Promise<Save
   const dbx = adminTables();
   const existing = (await dbx.getRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: payload.id
   })) as unknown as {
     slug: string;
@@ -487,7 +487,7 @@ export async function updateAttendee(payload: AttendeeFormPayload): Promise<Save
 
   await dbx.updateRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: payload.id,
     data: update
   });
@@ -497,12 +497,12 @@ export async function updateAttendee(payload: AttendeeFormPayload): Promise<Save
     gate.userId ?? ""
   );
 
-  // Keep per-document update permission in sync with user_id changes.
+  // Keep per-row update permission in sync with user_id changes.
   if (gate.isOrganizer) {
     const newUserId = update.user_id as string;
     await dbx.updateRow({
       databaseId: db,
-      tableId: COLLECTIONS.attendees,
+      tableId: TABLES.attendees,
       rowId: payload.id,
       data: {},
       permissions: attendeePermissions(newUserId)
@@ -522,7 +522,7 @@ export async function archiveAttendee(id: string): Promise<{ ok: boolean; error?
   if (!u || !u.labels.includes("organizer")) return { ok: false, error: "Not allowed." };
   await adminTables().updateRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: id,
     data: { status: "archived" }
   });
@@ -543,14 +543,14 @@ export async function mergeAttendees(
   const dbx = adminTables();
   const src = (await dbx.getRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: sourceId
   })) as unknown as {
     tag_ids?: string[];
   };
   const tgt = (await dbx.getRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: targetId
   })) as unknown as {
     tag_ids?: string[];
@@ -560,7 +560,7 @@ export async function mergeAttendees(
   const mergedTags = Array.from(new Set([...(tgt.tag_ids ?? []), ...(src.tag_ids ?? [])]));
   await dbx.updateRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: targetId,
     data: { tag_ids: mergedTags }
   });
@@ -568,7 +568,7 @@ export async function mergeAttendees(
   // Move attendee_badges from source -> target (dedupe by badge_id).
   const links = await dbx.listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendee_badges,
+    tableId: TABLES.attendee_badges,
     queries: [Query.equal("attendee_id", [sourceId, targetId]), Query.limit(500)]
   });
   const seen = new Set<string>();
@@ -584,13 +584,13 @@ export async function mergeAttendees(
     if (seen.has(link.badge_id)) {
       await dbx.deleteRow({
         databaseId: db,
-        tableId: COLLECTIONS.attendee_badges,
+        tableId: TABLES.attendee_badges,
         rowId: link.$id
       });
     } else {
       await dbx.updateRow({
         databaseId: db,
-        tableId: COLLECTIONS.attendee_badges,
+        tableId: TABLES.attendee_badges,
         rowId: link.$id,
         data: { attendee_id: targetId }
       });
@@ -600,7 +600,7 @@ export async function mergeAttendees(
 
   await dbx.updateRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: sourceId,
     data: { status: "archived" }
   });
@@ -639,7 +639,7 @@ export async function createTag(formData: FormData): Promise<CreateTagResult> {
     const dbx = adminTables();
     const existing = await dbx.listRows({
       databaseId: db,
-      tableId: COLLECTIONS.tags,
+      tableId: TABLES.tags,
       queries: [Query.equal("name", name), Query.limit(1)]
     });
     if (existing.rows[0]) {
@@ -647,9 +647,9 @@ export async function createTag(formData: FormData): Promise<CreateTagResult> {
       return { ok: true, id: existing.rows[0].$id };
     }
 
-    const doc = await dbx.createRow({
+    const row = await dbx.createRow({
       databaseId: db,
-      tableId: COLLECTIONS.tags,
+      tableId: TABLES.tags,
       rowId: ID.unique(),
       data: { name, type }
     });
@@ -659,7 +659,7 @@ export async function createTag(formData: FormData): Promise<CreateTagResult> {
     revalidatePath("/admin/tags");
     revalidatePath("/dex");
     revalidatePath("/profile/setup");
-    return { ok: true, id: doc.$id };
+    return { ok: true, id: row.$id };
   } catch (e) {
     return { ok: false, error: (e as Error).message || "Failed to create tag." };
   }
@@ -677,7 +677,7 @@ export async function deleteTag(tagId: string): Promise<DeleteTagResult> {
     while (true) {
       const attendees = await dbx.listRows({
         databaseId: db,
-        tableId: COLLECTIONS.attendees,
+        tableId: TABLES.attendees,
         queries: [Query.contains("tag_ids", id), Query.limit(100)]
       });
 
@@ -688,7 +688,7 @@ export async function deleteTag(tagId: string): Promise<DeleteTagResult> {
           : [];
         await dbx.updateRow({
           databaseId: db,
-          tableId: COLLECTIONS.attendees,
+          tableId: TABLES.attendees,
           rowId: attendee.$id,
           data: { tag_ids: nextTags }
         });
@@ -701,7 +701,7 @@ export async function deleteTag(tagId: string): Promise<DeleteTagResult> {
 
     await dbx.deleteRow({
       databaseId: db,
-      tableId: COLLECTIONS.tags,
+      tableId: TABLES.tags,
       rowId: id
     });
 
@@ -742,9 +742,9 @@ export async function createMeetup(formData: FormData): Promise<CreateMeetupResu
     return { ok: false, error: "External URL must start with http:// or https://." };
   }
 
-  const doc = await adminTables().createRow({
+  const row = await adminTables().createRow({
     databaseId: db,
-    tableId: COLLECTIONS.meetups,
+    tableId: TABLES.events,
     rowId: ID.unique(),
     data: {
       title,
@@ -758,7 +758,7 @@ export async function createMeetup(formData: FormData): Promise<CreateMeetupResu
   revalidatePath("/admin");
   revalidatePath("/admin/events");
   revalidatePath("/events");
-  return { ok: true, id: doc.$id };
+  return { ok: true, id: row.$id };
 }
 
 export async function updateMeetup(formData: FormData): Promise<CreateMeetupResult> {
@@ -782,7 +782,7 @@ export async function updateMeetup(formData: FormData): Promise<CreateMeetupResu
 
   await adminTables().updateRow({
     databaseId: db,
-    tableId: COLLECTIONS.meetups,
+    tableId: TABLES.events,
     rowId: id,
     data: {
       title,
@@ -826,7 +826,7 @@ export async function createBadge(formData: FormData): Promise<CreateBadgeResult
     // Idempotent on name; lets organizers re-run the Speaker seed without dupes.
     const existing = await dbx.listRows({
       databaseId: db,
-      tableId: COLLECTIONS.badges,
+      tableId: TABLES.badges,
       queries: [Query.equal("name", name), Query.limit(1)]
     });
     if (existing.rows[0]) {
@@ -834,9 +834,9 @@ export async function createBadge(formData: FormData): Promise<CreateBadgeResult
       return { ok: true, id: existing.rows[0].$id };
     }
 
-    const doc = await dbx.createRow({
+    const row = await dbx.createRow({
       databaseId: db,
-      tableId: COLLECTIONS.badges,
+      tableId: TABLES.badges,
       rowId: ID.unique(),
       data: {
         name,
@@ -847,7 +847,7 @@ export async function createBadge(formData: FormData): Promise<CreateBadgeResult
     });
     revalidatePath("/admin");
     revalidatePath("/admin/badges");
-    return { ok: true, id: doc.$id };
+    return { ok: true, id: row.$id };
   } catch (e) {
     return { ok: false, error: (e as Error).message || "Failed to create badge." };
   }
@@ -873,7 +873,7 @@ export async function assignBadgeToAttendee(
   const dbx = adminTables();
   const dup = await dbx.listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendee_badges,
+    tableId: TABLES.attendee_badges,
     queries: [
       Query.equal("attendee_id", attendeeId),
       Query.equal("badge_id", badgeId),
@@ -887,7 +887,7 @@ export async function assignBadgeToAttendee(
 
   await dbx.createRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendee_badges,
+    tableId: TABLES.attendee_badges,
     rowId: ID.unique(),
     data: {
       attendee_id: attendeeId,
@@ -901,7 +901,7 @@ export async function assignBadgeToAttendee(
   try {
     const a = (await dbx.getRow({
       databaseId: db,
-      tableId: COLLECTIONS.attendees,
+      tableId: TABLES.attendees,
       rowId: attendeeId
     })) as unknown as {
       slug?: string;
@@ -926,14 +926,14 @@ export async function unassignAttendeeBadge(
   try {
     const link = (await dbx.getRow({
       databaseId: db,
-      tableId: COLLECTIONS.attendee_badges,
+      tableId: TABLES.attendee_badges,
       rowId: attendeeBadgeId
     })) as unknown as { attendee_id?: string };
     attendeeId = link.attendee_id;
     if (link.attendee_id) {
       const a = (await dbx.getRow({
         databaseId: db,
-        tableId: COLLECTIONS.attendees,
+        tableId: TABLES.attendees,
         rowId: link.attendee_id
       })) as unknown as { slug?: string };
       slug = a.slug;
@@ -943,7 +943,7 @@ export async function unassignAttendeeBadge(
   }
   await dbx.deleteRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendee_badges,
+    tableId: TABLES.attendee_badges,
     rowId: attendeeBadgeId
   });
   if (attendeeId) await recomputeAttendeeLevel(attendeeId);
@@ -997,19 +997,19 @@ export async function claimAttendee(
   const u = await getCurrentUser();
   if (!u) return { ok: false, error: "Sign in first." };
   const dbx = adminTables();
-  const doc = (await dbx.getRow({
+  const row = (await dbx.getRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: attendeeId
   })) as unknown as {
     user_id?: string;
   };
-  if (doc.user_id && doc.user_id !== u.id) {
+  if (row.user_id && row.user_id !== u.id) {
     return { ok: false, error: "This profile is already claimed." };
   }
   await dbx.updateRow({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     rowId: attendeeId,
     data: { user_id: u.id },
     permissions: attendeePermissions(u.id)

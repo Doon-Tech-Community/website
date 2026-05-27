@@ -15,10 +15,10 @@ export const APPWRITE_BUCKET_AVATARS = env("NEXT_PUBLIC_APPWRITE_BUCKET_AVATARS"
 export const SESSION_COOKIE = `a_session_${APPWRITE_PROJECT_ID}`;
 export const LEGACY_SESSION_COOKIE = "appwrite-session";
 
-export const COLLECTIONS = {
+export const TABLES = {
   attendees: "attendees",
   tags: "tags",
-  meetups: "meetups",
+  events: "meetups",
   badges: "badges",
   attendee_badges: "attendee_badges",
   featured: "featured"
@@ -34,8 +34,8 @@ function sessionCookieValue(): string | undefined {
 }
 
 // Client tied to the current request's user session cookie.
-// Use for "act as the logged-in user" — reads from public collections work
-// without a session; writes require organizer label or matching document
+// Use for "act as the logged-in user" — reads from public tables work
+// without a session; writes require organizer label or matching row
 // permissions.
 export function sessionClient(): Client {
   const client = baseClient();

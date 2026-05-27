@@ -3,7 +3,7 @@ import AttendeeForm from "@/components/AttendeeForm";
 import { getCurrentUser, isOrganizer } from "@/lib/auth";
 import { getAttendeeById, listAllBadges, listAllTags } from "@/lib/queries";
 import { Query } from "node-appwrite";
-import { APPWRITE_DATABASE_ID, COLLECTIONS, adminTables } from "@/lib/appwrite";
+import { APPWRITE_DATABASE_ID, TABLES, adminTables } from "@/lib/appwrite";
 import type { Rarity } from "@/lib/types";
 import AttendeeBadgesPanel, { type AssignedBadge } from "./AttendeeBadgesPanel";
 
@@ -14,7 +14,7 @@ async function loadAssignedBadges(attendeeId: string): Promise<AssignedBadge[]> 
   const dbx = adminTables();
   const links = await dbx.listRows({
     databaseId: APPWRITE_DATABASE_ID,
-    tableId: COLLECTIONS.attendee_badges,
+    tableId: TABLES.attendee_badges,
     queries: [Query.equal("attendee_id", attendeeId), Query.limit(100)]
   });
   if (links.rows.length === 0) return [];
@@ -23,7 +23,7 @@ async function loadAssignedBadges(attendeeId: string): Promise<AssignedBadge[]> 
   );
   const badges = await dbx.listRows({
     databaseId: APPWRITE_DATABASE_ID,
-    tableId: COLLECTIONS.badges,
+    tableId: TABLES.badges,
     queries: [Query.equal("$id", badgeIds), Query.limit(badgeIds.length)]
   });
   const byId = new Map(

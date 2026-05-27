@@ -2,7 +2,7 @@ import "server-only";
 import { Query } from "node-appwrite";
 import {
   APPWRITE_DATABASE_ID,
-  COLLECTIONS,
+  TABLES,
   adminTables,
   avatarUrl,
   sessionTables
@@ -22,13 +22,13 @@ import type {
 
 const db = APPWRITE_DATABASE_ID;
 
-interface Doc {
+interface Row {
   $id: string;
   $createdAt: string;
   $updatedAt: string;
 }
 
-export function mapAttendee(d: Doc & Record<string, unknown>): Attendee {
+export function mapAttendee(d: Row & Record<string, unknown>): Attendee {
   return {
     id: d.$id,
     createdAt: d.$createdAt,
@@ -53,11 +53,11 @@ export function mapAttendee(d: Doc & Record<string, unknown>): Attendee {
   };
 }
 
-function mapTag(d: Doc & Record<string, unknown>): Tag {
+function mapTag(d: Row & Record<string, unknown>): Tag {
   return { id: d.$id, name: (d.name as string) ?? "", type: (d.type as TagType) ?? "skill" };
 }
 
-function mapMeetup(d: Doc & Record<string, unknown>): Meetup {
+function mapMeetup(d: Row & Record<string, unknown>): Meetup {
   return {
     id: d.$id,
     title: (d.title as string) ?? "",
@@ -67,7 +67,7 @@ function mapMeetup(d: Doc & Record<string, unknown>): Meetup {
   };
 }
 
-function mapBadge(d: Doc & Record<string, unknown>): Badge {
+function mapBadge(d: Row & Record<string, unknown>): Badge {
   return {
     id: d.$id,
     name: (d.name as string) ?? "",
@@ -81,21 +81,21 @@ export async function getAttendeeBySlug(slug: string): Promise<Attendee | null> 
   const dbx = sessionTables();
   const res = await dbx.listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     queries: [Query.equal("slug", slug), Query.limit(1)]
   });
   const d = res.rows[0];
-  return d ? mapAttendee(d as Doc & Record<string, unknown>) : null;
+  return d ? mapAttendee(d as Row & Record<string, unknown>) : null;
 }
 
 export async function getAttendeeById(id: string): Promise<Attendee | null> {
   try {
     const d = await sessionTables().getRow({
       databaseId: db,
-      tableId: COLLECTIONS.attendees,
+      tableId: TABLES.attendees,
       rowId: id
     });
-    return mapAttendee(d as Doc & Record<string, unknown>);
+    return mapAttendee(d as Row & Record<string, unknown>);
   } catch {
     return null;
   }
@@ -105,17 +105,17 @@ export async function listAttendeesForUser(userId: string, limit = 10): Promise<
   if (!userId) return [];
   const res = await adminTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     queries: [Query.equal("user_id", userId), Query.limit(limit)]
   });
-  return res.rows.map((d) => mapAttendee(d as Doc & Record<string, unknown>));
+  return res.rows.map((d) => mapAttendee(d as Row & Record<string, unknown>));
 }
 
 export async function hasAttendeeForUser(userId: string): Promise<boolean> {
   if (!userId) return false;
   const res = await adminTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     queries: [Query.equal("user_id", userId), Query.limit(1)]
   });
   return res.total > 0;
@@ -124,10 +124,10 @@ export async function hasAttendeeForUser(userId: string): Promise<boolean> {
 export async function listAllTags(): Promise<Tag[]> {
   const res = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.tags,
+    tableId: TABLES.tags,
     queries: [Query.orderAsc("name"), Query.limit(200)]
   });
-  return res.rows.map((d) => mapTag(d as Doc & Record<string, unknown>));
+  return res.rows.map((d) => mapTag(d as Row & Record<string, unknown>));
 }
 
 async function getTagsByIds(ids: string[]): Promise<Tag[]> {
@@ -135,28 +135,28 @@ async function getTagsByIds(ids: string[]): Promise<Tag[]> {
   const unique = Array.from(new Set(ids));
   const res = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.tags,
+    tableId: TABLES.tags,
     queries: [Query.equal("$id", unique), Query.limit(unique.length)]
   });
-  return res.rows.map((d) => mapTag(d as Doc & Record<string, unknown>));
+  return res.rows.map((d) => mapTag(d as Row & Record<string, unknown>));
 }
 
 export async function listAllMeetups(): Promise<Meetup[]> {
   const res = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.meetups,
+    tableId: TABLES.events,
     queries: [Query.orderDesc("date"), Query.limit(200)]
   });
-  return res.rows.map((d) => mapMeetup(d as Doc & Record<string, unknown>));
+  return res.rows.map((d) => mapMeetup(d as Row & Record<string, unknown>));
 }
 
 export async function listAllBadges(): Promise<Badge[]> {
   const res = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.badges,
+    tableId: TABLES.badges,
     queries: [Query.orderAsc("name"), Query.limit(200)]
   });
-  return res.rows.map((d) => mapBadge(d as Doc & Record<string, unknown>));
+  return res.rows.map((d) => mapBadge(d as Row & Record<string, unknown>));
 }
 
 interface BadgeStats {
@@ -170,7 +170,7 @@ async function badgeStatsFor(attendeeIds: string[]): Promise<Map<string, BadgeSt
 
   const linksRes = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendee_badges,
+    tableId: TABLES.attendee_badges,
     queries: [Query.equal("attendee_id", attendeeIds), Query.limit(1000)]
   });
   const links = linksRes.rows as unknown as Array<{ attendee_id: string; badge_id: string }>;
@@ -179,7 +179,7 @@ async function badgeStatsFor(attendeeIds: string[]): Promise<Map<string, BadgeSt
   const badgeIds = Array.from(new Set(links.map((l) => l.badge_id)));
   const badgesRes = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.badges,
+    tableId: TABLES.badges,
     queries: [Query.equal("$id", badgeIds), Query.limit(badgeIds.length)]
   });
   const rarityById = new Map(
@@ -201,11 +201,11 @@ async function badgeStatsFor(attendeeIds: string[]): Promise<Map<string, BadgeSt
 }
 
 async function listRowsForComputedLevelSort(queries: string[]): Promise<{
-  rows: Array<Doc & Record<string, unknown>>;
+  rows: Array<Row & Record<string, unknown>>;
   total: number;
 }> {
   const dbx = sessionTables();
-  const rows: Array<Doc & Record<string, unknown>> = [];
+  const rows: Array<Row & Record<string, unknown>> = [];
   const batchSize = 100;
   const maxRows = 1000;
   let total = 0;
@@ -213,11 +213,11 @@ async function listRowsForComputedLevelSort(queries: string[]): Promise<{
   while (rows.length < maxRows) {
     const res = await dbx.listRows({
       databaseId: db,
-      tableId: COLLECTIONS.attendees,
+      tableId: TABLES.attendees,
       queries: [...queries, Query.limit(batchSize), Query.offset(rows.length)]
     });
     total = res.total;
-    rows.push(...(res.rows as Array<Doc & Record<string, unknown>>));
+    rows.push(...(res.rows as Array<Row & Record<string, unknown>>));
     if (rows.length >= res.total || res.rows.length < batchSize) break;
   }
 
@@ -230,7 +230,7 @@ export async function badgesForAttendee(
   const dbx = sessionTables();
   const linksRes = await dbx.listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendee_badges,
+    tableId: TABLES.attendee_badges,
     queries: [Query.equal("attendee_id", attendeeId), Query.limit(100)]
   });
   const links = linksRes.rows as unknown as AttendeeBadge[];
@@ -238,11 +238,11 @@ export async function badgesForAttendee(
   const badgeIds = Array.from(new Set(links.map((l) => l.badge_id)));
   const badgesRes = await dbx.listRows({
     databaseId: db,
-    tableId: COLLECTIONS.badges,
+    tableId: TABLES.badges,
     queries: [Query.equal("$id", badgeIds), Query.limit(badgeIds.length)]
   });
   const byId = new Map(
-    badgesRes.rows.map((d) => [d.$id, mapBadge(d as Doc & Record<string, unknown>)])
+    badgesRes.rows.map((d) => [d.$id, mapBadge(d as Row & Record<string, unknown>)])
   );
   return links
     .map((l) => {
@@ -325,11 +325,11 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
 
     const res = await sessionTables().listRows({
       databaseId: db,
-      tableId: COLLECTIONS.attendees,
+      tableId: TABLES.attendees,
       queries
     });
     total = res.total;
-    attendees = res.rows.map((d) => mapAttendee(d as Doc & Record<string, unknown>));
+    attendees = res.rows.map((d) => mapAttendee(d as Row & Record<string, unknown>));
     statsById = await badgeStatsFor(attendees.map((a) => a.id));
     scoresById = new Map(
       attendees.map((a) => [
@@ -373,11 +373,11 @@ export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<A
   ];
   const res = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     queries
   });
   const attendees = res.rows
-    .map((d) => mapAttendee(d as Doc & Record<string, unknown>))
+    .map((d) => mapAttendee(d as Row & Record<string, unknown>))
     .map((a) => ({
       a,
       shared: a.tag_ids.filter((t) => attendee.tag_ids.includes(t)).length
@@ -409,7 +409,7 @@ export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<A
 export async function countActiveAttendees(): Promise<number> {
   const res = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.attendees,
+    tableId: TABLES.attendees,
     queries: [Query.equal("status", "active"), Query.limit(1)]
   });
   return res.total;
@@ -418,7 +418,7 @@ export async function countActiveAttendees(): Promise<number> {
 export async function countMeetups(): Promise<number> {
   const res = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.meetups,
+    tableId: TABLES.events,
     queries: [Query.limit(1)]
   });
   return res.total;
@@ -427,7 +427,7 @@ export async function countMeetups(): Promise<number> {
 export async function countTags(): Promise<number> {
   const res = await sessionTables().listRows({
     databaseId: db,
-    tableId: COLLECTIONS.tags,
+    tableId: TABLES.tags,
     queries: [Query.limit(1)]
   });
   return res.total;
