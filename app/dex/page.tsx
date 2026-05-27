@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { Suspense } from "react";
-import AttendeeCard from "@/components/AttendeeCard";
 import FiltersBar from "@/components/FiltersBar";
+import InfiniteAttendeeList from "@/components/InfiniteAttendeeList";
 import { listAllBadges, listAttendees } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -25,22 +24,15 @@ export default async function DexPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const badge = toArr(sp.badge);
-  const sort = (typeof sp.sort === "string" ? sp.sort : "name") as
-    | "name"
-    | "level"
-    | "recent";
-  const page = Number(sp.page) || 1;
+  const sort = (typeof sp.sort === "string" ? sp.sort : "name") as "name" | "recent";
 
-  const [{ items, total, pageSize }, badges] = await Promise.all([
-    listAttendees({ q, badge, sort, page, pageSize: 24 }),
+  const [{ items, total, nextCursor }, badges] = await Promise.all([
+    listAttendees({ q, badge, sort, pageSize: 24 }),
     listAllBadges()
   ]);
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const qp = new URLSearchParams();
-  if (q) qp.set("q", q);
-  badge.forEach((b) => qp.append("badge", b));
-  if (sort !== "name") qp.set("sort", sort);
+  // Reset the client list when filters change so it doesn't keep stale items.
+  const listKey = JSON.stringify({ q, badge, sort });
 
   return (
     <div className="dex-page pt-4 sm:pt-5 flex flex-col gap-4">
@@ -60,44 +52,16 @@ export default async function DexPage({ searchParams }: PageProps) {
 
       <div className="dex-page__meta flex items-center justify-between text-sm text-inkSoft">
         <span>{total} attendee{total === 1 ? "" : "s"}</span>
-        <span>Page {page} of {totalPages}</span>
       </div>
 
-      {items.length === 0 ? (
-        <div className="card-frame rounded-2xl p-10 text-center">
-          <p className="text-lg font-semibold mb-2">No attendees match your filters.</p>
-          <p className="text-sm text-inkSoft">Try clearing filters or check back after the next event.</p>
-        </div>
-      ) : (
-        <ul className="attendee-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {items.map((a) => (
-            <li key={a.id}>
-              <AttendeeCard a={a} />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {totalPages > 1 && (
-        <nav className="flex items-center justify-center gap-2 pt-2" aria-label="Pagination">
-          {Array.from({ length: totalPages }).map((_, i) => {
-            const p = i + 1;
-            const params = new URLSearchParams(qp);
-            params.set("page", String(p));
-            return (
-              <Link
-                key={p}
-                href={`/dex?${params.toString()}`}
-                aria-current={p === page ? "page" : undefined}
-                className={"chip cursor-pointer " + (p === page ? "!text-white" : "")}
-                style={p === page ? { background: "linear-gradient(180deg,#8FDBF8,#1E78A8)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.25), 0 0 0 1px #0B3950, 0 1px 0 rgba(0,0,0,0.2)" } : undefined}
-              >
-                {p}
-              </Link>
-            );
-          })}
-        </nav>
-      )}
+      <InfiniteAttendeeList
+        key={listKey}
+        initialItems={items}
+        initialCursor={nextCursor}
+        q={q}
+        badge={badge}
+        sort={sort}
+      />
     </div>
   );
 }

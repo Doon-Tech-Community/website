@@ -35,7 +35,6 @@ export default function FiltersBar({ badges }: { badges: Badge[] }) {
       if (Array.isArray(v)) v.forEach((x) => params.append(k, x));
       else params.set(k, v);
     }
-    params.delete("page");
     start(() => router.replace(`/dex?${params.toString()}`, { scroll: false }));
   }
 
@@ -66,7 +65,6 @@ export default function FiltersBar({ badges }: { badges: Badge[] }) {
           aria-label="Sort by"
         >
           <option value="name">Sort: A-Z</option>
-          <option value="level">Level</option>
           <option value="recent">Recent</option>
         </select>
       </div>

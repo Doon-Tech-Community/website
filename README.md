@@ -103,7 +103,7 @@ Badge XP uses rarity:
 
 Tenure adds 5 XP per full month since the attendee row was created, capped at 60 XP.
 
-`attendees.level` is a server-computed cache used for display/sorting fallback. It is recalculated when profiles are created or updated, badges are awarded or removed, attendees are merged, and tags are removed from attendees. The `/dex?sort=level` query recomputes levels from live profile, badge, and tenure data for the filtered result set before sorting; currently this live sort caps the filtered set at 1000 attendees.
+`attendees.level` is a server-computed cache used for display. It is recalculated when profiles are created or updated, badges are awarded or removed, attendees are merged, and tags are removed from attendees.
 
 ## Scripts
 
