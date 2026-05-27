@@ -23,7 +23,7 @@ export default async function Nav() {
   const profileAvatarUrl = attendee ? avatarUrl(attendee.avatar_file_id, 32) : "";
 
   const items: NavItem[] = [
-    { href: "/dex", label: "Pokedex", shortLabel: "Dex" },
+    { href: "/dex", label: "Pokedex", shortLabel: "Pokedex" },
     { href: "/events", label: "Events", shortLabel: "Events" }
   ];
 

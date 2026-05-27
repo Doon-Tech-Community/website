@@ -25,16 +25,17 @@ function safeNext(next?: string): string {
 export default async function ProfileSetupPage({
   searchParams
 }: {
-  searchParams: { next?: string };
+  searchParams: Promise<{ next?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect(`/login?next=${encodeURIComponent("/profile/setup")}`);
 
+  const sp = await searchParams;
   const linked = await listAttendeesForUser(user.id, 1);
-  if (linked.length > 0) redirect(safeNext(searchParams.next));
+  if (linked.length > 0) redirect(safeNext(sp.next));
 
   const name = user.name || fallbackName(user.email);
-  const next = safeNext(searchParams.next);
+  const next = safeNext(sp.next);
 
   return (
     <div className="pt-8 flex flex-col gap-6 max-w-md mx-auto">

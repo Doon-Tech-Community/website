@@ -69,5 +69,6 @@ export interface AttendeeListItem {
   tags: Tag[];
   level: number;
   badge_count: number;
+  badges: Array<{ name: string; rarity: Rarity }>;
   user_id: string;
 }

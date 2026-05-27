@@ -162,7 +162,10 @@ export async function listAllBadges(): Promise<Badge[]> {
 interface BadgeStats {
   count: number;
   rarities: Rarity[];
+  badges: Array<{ name: string; rarity: Rarity }>;
 }
+
+const RARITY_RANK: Record<Rarity, number> = { legendary: 4, epic: 3, rare: 2, common: 1 };
 
 async function badgeStatsFor(attendeeIds: string[]): Promise<Map<string, BadgeStats>> {
   const stats = new Map<string, BadgeStats>();
@@ -182,19 +185,24 @@ async function badgeStatsFor(attendeeIds: string[]): Promise<Map<string, BadgeSt
     tableId: TABLES.badges,
     queries: [Query.equal("$id", badgeIds), Query.limit(badgeIds.length)]
   });
-  const rarityById = new Map(
-    badgesRes.rows.map((d) => [
-      d.$id,
-      ((d as unknown as { rarity?: Rarity }).rarity ?? "common") as Rarity
-    ])
+  const badgeById = new Map(
+    badgesRes.rows.map((d) => {
+      const row = d as unknown as { name?: string; rarity?: Rarity };
+      return [d.$id, { name: row.name ?? "", rarity: (row.rarity ?? "common") as Rarity }];
+    })
   );
 
   for (const link of links) {
-    const rarity = rarityById.get(link.badge_id) ?? "common";
-    const current = stats.get(link.attendee_id) ?? { count: 0, rarities: [] };
+    const badge = badgeById.get(link.badge_id) ?? { name: "", rarity: "common" as Rarity };
+    const current = stats.get(link.attendee_id) ?? { count: 0, rarities: [], badges: [] };
     current.count += 1;
-    current.rarities.push(rarity);
+    current.rarities.push(badge.rarity);
+    if (badge.name) current.badges.push({ name: badge.name, rarity: badge.rarity });
     stats.set(link.attendee_id, current);
+  }
+
+  for (const entry of stats.values()) {
+    entry.badges.sort((a, b) => RARITY_RANK[b.rarity] - RARITY_RANK[a.rarity]);
   }
 
   return stats;
@@ -254,7 +262,7 @@ export async function badgesForAttendee(
 
 export interface ListAttendeesParams {
   q?: string;
-  tag?: string[];
+  badge?: string[];
   role?: string;
   sort?: "name" | "level" | "recent";
   page?: number;
@@ -285,15 +293,41 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
   const role = (p.role ?? "").trim();
   if (role) filters.push(Query.search("role_title", role));
 
-  if (p.tag && p.tag.length > 0) {
-    // Resolve tag names -> ids so callers can pass either
-    const allTags = await listAllTags();
-    const byName = new Map(allTags.map((t) => [t.name.toLowerCase(), t.id]));
-    const byId = new Set(allTags.map((t) => t.id));
-    const tagIds = p.tag
-      .map((t) => (byId.has(t) ? t : byName.get(t.toLowerCase())))
+  if (p.badge && p.badge.length > 0) {
+    // Resolve badge names -> ids so callers can pass either
+    const allBadges = await listAllBadges();
+    const byName = new Map(allBadges.map((b) => [b.name.toLowerCase(), b.id]));
+    const byId = new Set(allBadges.map((b) => b.id));
+    const badgeIds = p.badge
+      .map((b) => (byId.has(b) ? b : byName.get(b.toLowerCase())))
       .filter((x): x is string => !!x);
-    for (const tid of tagIds) filters.push(Query.contains("tag_ids", tid));
+
+    if (badgeIds.length === 0) {
+      return { items: [], total: 0, page, pageSize };
+    }
+
+    // AND semantics: an attendee must have every selected badge.
+    const linksRes = await (await sessionTables()).listRows({
+      databaseId: db,
+      tableId: TABLES.attendee_badges,
+      queries: [Query.equal("badge_id", badgeIds), Query.limit(5000)]
+    });
+    const links = linksRes.rows as unknown as Array<{ attendee_id: string; badge_id: string }>;
+    const distinctByAttendee = new Map<string, Set<string>>();
+    for (const link of links) {
+      const set = distinctByAttendee.get(link.attendee_id) ?? new Set<string>();
+      set.add(link.badge_id);
+      distinctByAttendee.set(link.attendee_id, set);
+    }
+    const matchingIds = [...distinctByAttendee.entries()]
+      .filter(([, set]) => set.size === badgeIds.length)
+      .map(([id]) => id);
+
+    if (matchingIds.length === 0) {
+      return { items: [], total: 0, page, pageSize };
+    }
+
+    filters.push(Query.equal("$id", matchingIds));
   }
 
   const sort = p.sort ?? "name";
@@ -354,6 +388,7 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
     tags: a.tag_ids.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t),
     level: scoresById.get(a.id)?.level ?? a.level,
     badge_count: statsById.get(a.id)?.count ?? 0,
+    badges: statsById.get(a.id)?.badges ?? [],
     user_id: a.user_id
   }));
 
@@ -404,6 +439,7 @@ export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<A
     tags: a.tag_ids.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t),
     level: calculateLevelScore(a, badgeStats.get(a.id)?.rarities ?? []).level,
     badge_count: badgeStats.get(a.id)?.count ?? 0,
+    badges: badgeStats.get(a.id)?.badges ?? [],
     user_id: a.user_id
   }));
 }

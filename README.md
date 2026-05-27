@@ -148,7 +148,7 @@ appwrite.config.json (Appwrite CLI schema)
 
 - All writes go through server actions in `lib/actions.ts`. They authenticate the request via the session cookie, enforce the `organizer` label (or `user_id` match for self-edits), and use the admin API key to perform the mutation.
 - Organizers can add events from `/admin/events`; new records appear on `/events` and update the dashboard count.
-- Organizers can add tags from `/admin/tags`; new tags appear in filters and attendee profile forms.
+- Organizers can add tags from `/admin/tags`; new tags appear in attendee profile forms. The Pokedex filter row is driven by badges, not tags.
 - Organizers can create badges from `/admin/badges` and award them to attendees via the **Badges** panel on each attendee's edit page (`/admin/attendees/[id]/edit`). Awarded badges are stored in `attendee_badges` and render as `BadgePill`s on the profile page.
 - Avatars upload to the `avatars` bucket; `avatar_file_id` on the attendee references the file. The public view URL is built by `avatarUrl(fileId)` in `lib/appwrite.ts`.
 - The OTP flow uses Appwrite's `Account.createEmailToken` + `Account.createSession` through the server SDK admin client. The session secret is stored in an HTTP-only `a_session_<PROJECT_ID>` cookie and passed back to Appwrite with `setSession()`.

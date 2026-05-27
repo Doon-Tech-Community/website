@@ -1,15 +1,22 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import type { Tag } from "@/lib/types";
+import type { Badge, Rarity } from "@/lib/types";
 
-export default function FiltersBar({ tags }: { tags: Tag[] }) {
+const rarityChipClass: Record<Rarity, string> = {
+  common: "chip",
+  rare: "chip chip-rare",
+  epic: "chip chip-epic",
+  legendary: "chip chip-legendary"
+};
+
+export default function FiltersBar({ badges }: { badges: Badge[] }) {
   const router = useRouter();
   const sp = useSearchParams();
   const [pending, start] = useTransition();
   const [q, setQ] = useState(sp.get("q") ?? "");
 
-  const activeTags = useMemo(() => new Set(sp.getAll("tag")), [sp]);
+  const activeBadges = useMemo(() => new Set(sp.getAll("badge")), [sp]);
   const sort = sp.get("sort") ?? "name";
 
   useEffect(() => {
@@ -32,11 +39,11 @@ export default function FiltersBar({ tags }: { tags: Tag[] }) {
     start(() => router.replace(`/dex?${params.toString()}`, { scroll: false }));
   }
 
-  function toggleTag(name: string) {
-    const next = new Set(activeTags);
+  function toggleBadge(name: string) {
+    const next = new Set(activeBadges);
     if (next.has(name)) next.delete(name);
     else next.add(name);
-    update({ tag: [...next] });
+    update({ badge: [...next] });
   }
 
   return (
@@ -63,29 +70,30 @@ export default function FiltersBar({ tags }: { tags: Tag[] }) {
           <option value="recent">Recent</option>
         </select>
       </div>
-      <div className="filters-bar__tags flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
-        {tags.map((t) => {
-          const active = activeTags.has(t.name);
+      <div className="filters-bar__tags flex flex-wrap gap-2" role="group" aria-label="Filter by badge">
+        {badges.map((b) => {
+          const active = activeBadges.has(b.name);
           return (
             <button
-              key={t.id}
-              onClick={() => toggleTag(t.name)}
+              key={b.id}
+              onClick={() => toggleBadge(b.name)}
               aria-pressed={active}
               className={
-                "chip cursor-pointer " +
+                rarityChipClass[b.rarity] +
+                " cursor-pointer " +
                 (active ? "!text-white" : "")
               }
               style={active ? { background: "linear-gradient(180deg,#8FDBF8,#1E78A8)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.25), 0 0 0 1px #0B3950, 0 1px 0 rgba(0,0,0,0.2)" } : undefined}
             >
-              {t.name}
+              <span aria-hidden>●</span> {b.name}
             </button>
           );
         })}
-        {(activeTags.size > 0 || sp.get("q")) && (
+        {(activeBadges.size > 0 || sp.get("q")) && (
           <button
             onClick={() => {
               setQ("");
-              update({ q: null, tag: [] });
+              update({ q: null, badge: [] });
             }}
             className="chip !text-shellInk"
             style={{ background: "linear-gradient(180deg,#FFC5C7,#F26B6F)" }}

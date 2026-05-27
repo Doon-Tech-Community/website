@@ -47,11 +47,12 @@ async function loadAssignedBadges(attendeeId: string): Promise<AssignedBadge[]> 
     .filter((x): x is AssignedBadge => x !== null);
 }
 
-export default async function EditAttendeePage({ params }: { params: { id: string } }) {
+export default async function EditAttendeePage({ params }: { params: Promise<{ id: string }> }) {
   const [user, organizer] = await Promise.all([getCurrentUser(), isOrganizer()]);
-  if (!user) redirect(`/login?next=${encodeURIComponent(`/admin/attendees/${params.id}/edit`)}`);
+  const { id } = await params;
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/admin/attendees/${id}/edit`)}`);
 
-  const a = await getAttendeeById(params.id);
+  const a = await getAttendeeById(id);
   if (!a) notFound();
 
   // Organizers can edit anyone. Otherwise the logged-in user must own this attendee.

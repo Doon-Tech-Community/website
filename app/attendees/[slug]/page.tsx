@@ -17,11 +17,12 @@ import {
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const a = await getAttendeeBySlug(params.slug);
+  const { slug } = await params;
+  const a = await getAttendeeBySlug(slug);
   if (!a) return { title: "Attendee not found" };
   const desc = `${a.role_title}${a.company ? ` @ ${a.company}` : ""} · ${a.location}. ${a.bio}`.slice(0, 200);
   const ogUrl = `/og?slug=${encodeURIComponent(a.slug)}`;
@@ -40,7 +41,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function AttendeePage({ params }: PageProps) {
-  const a = await getAttendeeBySlug(params.slug);
+  const { slug } = await params;
+  const a = await getAttendeeBySlug(slug);
   if (!a) notFound();
 
   const [tags, badges, related] = await Promise.all([

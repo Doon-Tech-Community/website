@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import AttendeeCard from "@/components/AttendeeCard";
 import FiltersBar from "@/components/FiltersBar";
-import { listAllTags, listAttendees } from "@/lib/queries";
+import { listAllBadges, listAttendees } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export const metadata = {
 };
 
 interface PageProps {
-  searchParams: { [k: string]: string | string[] | undefined };
+  searchParams: Promise<{ [k: string]: string | string[] | undefined }>;
 }
 
 function toArr(v?: string | string[]): string[] {
@@ -22,23 +22,24 @@ function toArr(v?: string | string[]): string[] {
 }
 
 export default async function DexPage({ searchParams }: PageProps) {
-  const q = typeof searchParams.q === "string" ? searchParams.q : "";
-  const tag = toArr(searchParams.tag);
-  const sort = (typeof searchParams.sort === "string" ? searchParams.sort : "name") as
+  const sp = await searchParams;
+  const q = typeof sp.q === "string" ? sp.q : "";
+  const badge = toArr(sp.badge);
+  const sort = (typeof sp.sort === "string" ? sp.sort : "name") as
     | "name"
     | "level"
     | "recent";
-  const page = Number(searchParams.page) || 1;
+  const page = Number(sp.page) || 1;
 
-  const [{ items, total, pageSize }, tags] = await Promise.all([
-    listAttendees({ q, tag, sort, page, pageSize: 24 }),
-    listAllTags()
+  const [{ items, total, pageSize }, badges] = await Promise.all([
+    listAttendees({ q, badge, sort, page, pageSize: 24 }),
+    listAllBadges()
   ]);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const qp = new URLSearchParams();
   if (q) qp.set("q", q);
-  tag.forEach((t) => qp.append("tag", t));
+  badge.forEach((b) => qp.append("badge", b));
   if (sort !== "name") qp.set("sort", sort);
 
   return (
@@ -54,7 +55,7 @@ export default async function DexPage({ searchParams }: PageProps) {
       </header>
 
       <Suspense>
-        <FiltersBar tags={tags} />
+        <FiltersBar badges={badges} />
       </Suspense>
 
       <div className="dex-page__meta flex items-center justify-between text-sm text-inkSoft">

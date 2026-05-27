@@ -1,9 +1,14 @@
 import Link from "next/link";
 import type { AttendeeListItem } from "@/lib/types";
 import Avatar from "./Avatar";
+import BadgePill from "./BadgePill";
 import TagChip from "./TagChip";
 
+const MAX_BADGES_ON_CARD = 3;
+
 export default function AttendeeCard({ a }: { a: AttendeeListItem }) {
+  const featuredBadges = a.badges.slice(0, MAX_BADGES_ON_CARD);
+  const hiddenBadges = a.badge_count - featuredBadges.length;
   return (
     <Link
       href={`/attendees/${a.slug}`}
@@ -24,9 +29,22 @@ export default function AttendeeCard({ a }: { a: AttendeeListItem }) {
         ))}
         {a.tags.length > 4 && <span className="chip">+{a.tags.length - 4}</span>}
       </div>
-      <div className="mt-auto flex items-center justify-between gap-3 text-xs text-inkSoft pt-2 border-t border-ink/15">
-        <span className="pixel text-[0.55rem] text-accent">LV {a.level}</span>
-        <span>{a.badge_count} badge{a.badge_count === 1 ? "" : "s"}</span>
+      <div className="mt-auto flex items-center justify-between gap-2 text-xs text-inkSoft pt-2 border-t border-ink/15">
+        <span className="pixel text-[0.55rem] text-accent shrink-0">LV {a.level}</span>
+        {featuredBadges.length > 0 ? (
+          <div className="flex flex-wrap items-center justify-end gap-1">
+            {featuredBadges.map((b, i) => (
+              <BadgePill key={`${b.name}-${i}`} name={b.name} rarity={b.rarity} size="sm" />
+            ))}
+            {hiddenBadges > 0 && (
+              <span className="chip" style={{ fontSize: "0.42rem", padding: "0.2rem 0.4rem" }}>
+                +{hiddenBadges}
+              </span>
+            )}
+          </div>
+        ) : (
+          <span>0 badges</span>
+        )}
       </div>
     </Link>
   );

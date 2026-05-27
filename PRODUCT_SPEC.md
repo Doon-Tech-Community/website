@@ -34,9 +34,9 @@ Detailed profile pages with bio, current role, company, social links, event hist
 - **Status:** Partial. Profiles, badges, links, tags, and level exist; event history is not implemented yet.
 
 ### Search and filters _(P0, Partial)_
-Search attendees by name, company, role, tags, event attended, and skill set.
+Search attendees by name, company, role, badges earned, event attended, and skill set.
 - **User value:** Lets users find the right person fast without scrolling the whole directory.
-- **Status:** Partial. Name/company/role search, tag filtering, and sorting exist; event-attended filters are not implemented yet.
+- **Status:** Partial. Name/company/role search, badge filtering, and sorting exist; event-attended filters are not implemented yet.
 
 ### Organizer attendee management _(P0, Implemented)_
 Admin tools to create, edit, archive, and merge attendee profiles.
@@ -121,12 +121,12 @@ Show metrics like total attendees, most common skills, most attended event, and 
 - Skip-to-content link at the top of `<body>`.
 - All controls reach via keyboard; chip filters use `aria-pressed`, pagination uses `aria-current="page"`.
 - Color contrast is verified against the light-blue glass screen background, not the dark outside chassis — body ink stays at `#0B2A3E` on `#E7F6FD–#7ABDDE`.
-- Chassis is capped at `max-w-6xl` and shrinks padding on small screens; the attendee grid steps down from 4 → 3 → 2 → 1 columns.
+- Chassis is capped at 768px on desktop and goes full-width on mobile; the attendee grid steps down from 2 → 1 columns.
 - 3D tilt and decorative chrome degrade gracefully under reduced motion.
 
 ### Key screens
 - **Landing (`/`):** Boot screen inside the LCD. "SYSTEM READY" LED row, two-line pixel title `DOON TECH COMMUNITY`, intro paragraph in VT323, three stat blocks (Developers / Events / Tags), a primary `▶ ENTER POKÉDEX` button, keyboard hint `PRESS A OR ENTER TO START`, and small secondary links to `Events →` and `Admin →`.
-- **Pokédex Grid (`/dex`):** Header with a coral `►` bullet, pixel `THE POKÉDEX` title, and a one-line description. Below it: a search input + sort dropdown row, a horizontal row of tag-filter chips (active chips switch to the blue button gradient), a result-count + page-count strip, the attendee card grid, a chip-style pagination row, and a glass empty-state card when filters return nothing.
+- **Pokédex Grid (`/dex`):** Header with a coral `►` bullet, pixel `THE POKÉDEX` title, and a one-line description. Below it: a search input + sort dropdown row, a horizontal row of badge-filter chips colored by rarity (active chips switch to the blue button gradient), a result-count + page-count strip, the attendee card grid, a chip-style pagination row, and a glass empty-state card when filters return nothing.
 - **Attendee Profile (`/attendees/[slug]`):** A frame card with a coral→badge→gold gradient banner, large square avatar overlapping the banner, name with a `LVL N` epic chip, role · company, location, tag chips, and a small stat block grid (Badges / Level). Below: a two-column layout — Bio + Developer Card (preferred stack, favorite topic, company, location) on the left; Badges, Social Links, and Related Attendees on the right.
 - **Organizer Dashboard (`/admin`):** Logged-out state shows a centered glass card prompting organizer sign-in. Signed in: page title with a green `ORGANIZER` chip, a `+ New developer` primary button, three stat blocks (Attendees / Events / Tags), and the attendees table with search, edit/archive row actions, and a merge mode that selects a source and target.
 - **Events (`/events`):** A simple two-column grid of glass cards. Each card shows the title, an `upcoming` (gold) or `completed` (green) chip derived from the date, the date line, a two-line description, and an `Open event ↗` link. The whole card links out to the external event URL.
@@ -310,7 +310,7 @@ The `/dex?sort=level` listing recomputes level from live profile, badge, and ten
 ### `GET /attendees`
 List attendees with search, filters, sorting, and pagination.
 - **Request:** None
-- **Response:** [{ id, name, slug, role_title, company, avatar_url, tags[], level, badge_count }]
+- **Response:** [{ id, name, slug, role_title, company, avatar_url, tags[], level, badge_count, badges[] }]
 
 ## Recommended Tech Stack
 - **Frontend:** Next.js with TypeScript and Tailwind CSS
