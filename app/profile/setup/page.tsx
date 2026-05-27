@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import AttendeeForm from "@/components/AttendeeForm";
+import MinimalProfileSetupForm from "@/components/MinimalProfileSetupForm";
 import { getCurrentUser } from "@/lib/auth";
-import { listAllTags, listAttendeesForUser } from "@/lib/queries";
+import { listAttendeesForUser } from "@/lib/queries";
 
-export const metadata = { title: "Complete profile", robots: { index: false } };
+export const metadata = { title: "Get started", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 function fallbackName(email: string): string {
@@ -33,43 +33,20 @@ export default async function ProfileSetupPage({
   const linked = await listAttendeesForUser(user.id, 1);
   if (linked.length > 0) redirect(safeNext(searchParams.next));
 
-  const tags = await listAllTags();
   const name = user.name || fallbackName(user.email);
+  const next = safeNext(searchParams.next);
 
   return (
-    <div className="pt-8 flex flex-col gap-6 max-w-3xl mx-auto">
+    <div className="pt-8 flex flex-col gap-6 max-w-md mx-auto">
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Complete your attendee profile</h1>
+        <h1 className="text-3xl font-bold tracking-tight">What should we call you?</h1>
         <p className="text-sm text-inkSoft">
-          Create the card linked to your account before continuing.
+          We&apos;ll set up your Pokédex card with just your name for now. You can fill in the rest from your profile whenever you&apos;re ready.
         </p>
       </header>
 
       <section className="card-frame rounded-2xl p-5">
-        <AttendeeForm
-          mode="self-create"
-          tags={tags}
-          canEditOrganizerFields={false}
-          initial={{
-            name,
-            slug: "",
-            bio: "",
-            role_title: "",
-            company: "",
-            location: "Dehradun",
-            avatar_file_id: "",
-            cover_file_id: "",
-            linkedin_url: "",
-            github_url: "",
-            website_url: "",
-            status: "active",
-            user_id: user.id,
-            preferred_stack: "",
-            favorite_topic: "",
-            level: 1,
-            tag_ids: []
-          }}
-        />
+        <MinimalProfileSetupForm initialName={name} next={next} />
       </section>
     </div>
   );

@@ -32,12 +32,13 @@ export default function LoginForm({
   async function verifyCode(formData: FormData) {
     setError(null);
     formData.set("userId", userId);
+    formData.set("next", next);
     const result = await verifyEmailOtp(formData);
     if (!result.ok) {
       setError(result.error || "Invalid code.");
       return;
     }
-    router.replace(next);
+    router.replace(result.redirectTo || next);
     router.refresh();
   }
 

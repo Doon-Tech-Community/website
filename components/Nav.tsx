@@ -16,7 +16,6 @@ export default async function Nav() {
     { href: "/dex", label: "Pokedex", shortLabel: "Dex" },
     { href: "/events", label: "Events", shortLabel: "Events" }
   ];
-  if (organizer) items.push({ href: "/admin", label: "Admin" });
 
   return (
     <nav aria-label="Primary" className="device-nav flex items-center gap-2 flex-wrap">
@@ -34,6 +33,11 @@ export default async function Nav() {
               <Link href="/profile" className="btn btn-ghost">
                 Profile
               </Link>
+              {organizer && (
+                <Link href="/admin" className="btn btn-ghost">
+                  Admin
+                </Link>
+              )}
               <form action={logout}>
                 <button type="submit" className="btn btn-ghost" aria-label={`Sign out ${user.email}`}>
                   Sign out

@@ -73,11 +73,19 @@ export async function startEmailOtp(formData: FormData): Promise<OtpStartResult>
 export interface OtpVerifyResult {
   ok: boolean;
   error?: string;
+  redirectTo?: string;
+}
+
+function safeReturnUrl(value: string): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/";
+  if (value === "/login" || value.startsWith("/login?")) return "/";
+  return value;
 }
 
 export async function verifyEmailOtp(formData: FormData): Promise<OtpVerifyResult> {
   const userId = sanitize(formData.get("userId"), 100);
   const code = sanitize(formData.get("code"), 16).replace(/\s+/g, "");
+  const requestedNext = safeReturnUrl(sanitize(formData.get("next"), 500));
   if (!userId || !code) return { ok: false, error: "Missing code." };
   try {
     const session = await adminAccount().createSession({
@@ -96,7 +104,20 @@ export async function verifyEmailOtp(formData: FormData): Promise<OtpVerifyResul
       expires: new Date(session.expire)
     });
     cookieStore.delete(LEGACY_SESSION_COOKIE);
-    return { ok: true };
+
+    // One-time profile check at sign-in only. Avoids the redirect-loop risk
+    // of a layout-level gate that re-runs on every navigation.
+    const existing = await adminTables().listRows({
+      databaseId: db,
+      tableId: TABLES.attendees,
+      queries: [Query.equal("user_id", userId), Query.limit(1)]
+    });
+    const hasProfile = existing.total > 0;
+    const redirectTo = hasProfile
+      ? requestedNext
+      : `/profile/setup?next=${encodeURIComponent(requestedNext)}`;
+
+    return { ok: true, redirectTo };
   } catch (e) {
     return { ok: false, error: (e as Error).message || "Invalid or expired code." };
   }

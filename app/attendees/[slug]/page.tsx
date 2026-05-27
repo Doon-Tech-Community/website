@@ -54,7 +54,7 @@ export default async function AttendeePage({ params }: PageProps) {
   return (
     <article className="pt-8 flex flex-col gap-6">
       <nav aria-label="Breadcrumb" className="text-sm text-slate-400">
-        <Link href="/" className="hover:text-white">
+        <Link href="/dex" className="hover:text-white">
           ← Back to Pokedex
         </Link>
       </nav>
@@ -81,7 +81,7 @@ export default async function AttendeePage({ params }: PageProps) {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-3 self-start md:self-center">
+          <div className="grid grid-cols-2 md:grid-cols-1 gap-3 self-start md:self-center">
             <Stat label="Level" value={level} />
             <Stat label="Badges" value={badges.length} />
           </div>

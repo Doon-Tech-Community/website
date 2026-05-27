@@ -1,18 +1,19 @@
 "use client";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-type Sort = "name" | "level" | "recent";
-const SORTS: Sort[] = ["name", "level", "recent"];
+const MAIN_PAGES = ["/dex", "/events", "/profile"] as const;
+type MainPage = (typeof MAIN_PAGES)[number];
 
 export default function DeviceControls() {
   const router = useRouter();
   const pathname = usePathname();
-  const sp = useSearchParams();
   const [muted, setMuted] = useState(true);
 
-  const onDex = pathname === "/dex";
   const onLanding = pathname === "/";
+  const onDex = pathname === "/dex";
+  const mainIndex = MAIN_PAGES.indexOf(pathname as MainPage);
+  const onMain = mainIndex !== -1;
 
   useEffect(() => {
     try {
@@ -26,41 +27,27 @@ export default function DeviceControls() {
     return () => window.removeEventListener("dtc:sound-changed", onChange);
   }, []);
 
-  const patchSearch = useCallback(
-    (patch: Record<string, string | null>) => {
-      const params = new URLSearchParams(sp.toString());
-      for (const [k, v] of Object.entries(patch)) {
-        if (v === null) params.delete(k);
-        else params.set(k, v);
-      }
-      router.replace(`/dex?${params.toString()}`, { scroll: false });
-    },
-    [router, sp]
-  );
-
-  const currentPage = Math.max(1, Number(sp.get("page") || 1));
-  const currentSort = (sp.get("sort") as Sort) || "name";
-
-  const prevPage = useCallback(() => {
-    if (!onDex) return;
-    const next = Math.max(1, currentPage - 1);
-    patchSearch({ page: next === 1 ? null : String(next) });
-  }, [onDex, currentPage, patchSearch]);
-
-  const nextPage = useCallback(() => {
-    if (!onDex) return;
-    patchSearch({ page: String(currentPage + 1) });
-  }, [onDex, currentPage, patchSearch]);
-
-  const cycleSort = useCallback(
+  const cycleMain = useCallback(
     (dir: 1 | -1) => {
-      if (!onDex) return;
-      const idx = SORTS.indexOf(currentSort);
-      const next = SORTS[(idx + dir + SORTS.length) % SORTS.length];
-      patchSearch({ sort: next === "name" ? null : next, page: null });
+      if (!onMain) return;
+      const next = MAIN_PAGES[(mainIndex + dir + MAIN_PAGES.length) % MAIN_PAGES.length];
+      router.push(next);
     },
-    [onDex, currentSort, patchSearch]
+    [onMain, mainIndex, router]
   );
+
+  const scrollPage = useCallback((dir: 1 | -1) => {
+    if (typeof window === "undefined") return;
+    // On mobile the .device-screen (.lcd-panel) is the actual scroll container
+    // because the chassis is locked to the viewport. On desktop the window
+    // scrolls. Pick whichever can actually move.
+    const panel = document.querySelector<HTMLElement>(".device-screen");
+    if (panel && panel.scrollHeight > panel.clientHeight) {
+      panel.scrollBy({ top: dir * panel.clientHeight * 0.8, behavior: "smooth" });
+    } else {
+      window.scrollBy({ top: dir * window.innerHeight * 0.8, behavior: "smooth" });
+    }
+  }, []);
 
   const onAction = useCallback(async () => {
     if (onLanding) {
@@ -90,7 +77,9 @@ export default function DeviceControls() {
     window.dispatchEvent(new CustomEvent("dtc:sound-toggle"));
   }, []);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts mirror the D-pad. ArrowLeft/Right cycle main pages
+  // (only when on a main page). ArrowUp/Down scroll. A/Enter triggers the
+  // action button. M toggles sound.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const target = e.target instanceof HTMLElement ? e.target : null;
@@ -98,14 +87,12 @@ export default function DeviceControls() {
         const tag = target.tagName;
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable) return;
       }
-      // If the user is focused on an interactive element, let the browser handle
-      // Enter (and the actionable letters) naturally — don't hijack.
       const onInteractive = !!target?.closest('button, a, [role="button"]');
       switch (e.key) {
-        case "ArrowLeft":  if (onDex) { e.preventDefault(); prevPage(); } break;
-        case "ArrowRight": if (onDex) { e.preventDefault(); nextPage(); } break;
-        case "ArrowUp":    if (onDex) { e.preventDefault(); cycleSort(-1); } break;
-        case "ArrowDown":  if (onDex) { e.preventDefault(); cycleSort(1); } break;
+        case "ArrowLeft":  if (onMain) { e.preventDefault(); cycleMain(-1); } break;
+        case "ArrowRight": if (onMain) { e.preventDefault(); cycleMain(1); } break;
+        case "ArrowUp":    e.preventDefault(); scrollPage(-1); break;
+        case "ArrowDown":  e.preventDefault(); scrollPage(1); break;
         case "a":
         case "A":          if (!onInteractive) { e.preventDefault(); onAction(); } break;
         case "Enter":      if (!onInteractive) { e.preventDefault(); onAction(); } break;
@@ -115,33 +102,29 @@ export default function DeviceControls() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onDex, prevPage, nextPage, cycleSort, onAction, toggleSound]);
-
-  const dpadDisabled = !onDex;
-  const sortLabel = currentSort.toUpperCase();
+  }, [onMain, cycleMain, scrollPage, onAction, toggleSound]);
 
   return (
     <div className="device-controls flex items-center justify-between mt-5 gap-4">
       {/* D-pad */}
       <div className="device-controls__left flex items-center gap-3">
-        <div className="dpad" role="group" aria-label="Pokédex navigation">
+        <div className="dpad" role="group" aria-label="Device controls">
           <button
             type="button"
             className="dpad-btn dpad-up"
-            disabled={dpadDisabled}
-            onClick={() => cycleSort(-1)}
-            aria-label="Previous sort order"
-            title="Previous sort order"
+            onClick={() => scrollPage(-1)}
+            aria-label="Scroll up"
+            title="Scroll up"
           >
             <span aria-hidden>▲</span>
           </button>
           <button
             type="button"
             className="dpad-btn dpad-left"
-            disabled={dpadDisabled}
-            onClick={prevPage}
-            aria-label="Previous page"
-            title="Previous page"
+            disabled={!onMain}
+            onClick={() => cycleMain(-1)}
+            aria-label="Previous section"
+            title="Previous section"
           >
             <span aria-hidden>◀</span>
           </button>
@@ -149,30 +132,23 @@ export default function DeviceControls() {
           <button
             type="button"
             className="dpad-btn dpad-right"
-            disabled={dpadDisabled}
-            onClick={nextPage}
-            aria-label="Next page"
-            title="Next page"
+            disabled={!onMain}
+            onClick={() => cycleMain(1)}
+            aria-label="Next section"
+            title="Next section"
           >
             <span aria-hidden>▶</span>
           </button>
           <button
             type="button"
             className="dpad-btn dpad-down"
-            disabled={dpadDisabled}
-            onClick={() => cycleSort(1)}
-            aria-label="Next sort order"
-            title="Next sort order"
+            onClick={() => scrollPage(1)}
+            aria-label="Scroll down"
+            title="Scroll down"
           >
             <span aria-hidden>▼</span>
           </button>
         </div>
-        {onDex && (
-          <div className="device-controls__readout pixel text-[0.5rem] text-white/85" style={{ textShadow: "0 1px 0 rgba(0,0,0,0.4)" }}>
-            <div>PG {currentPage}</div>
-            <div className="mt-1 opacity-80">{sortLabel}</div>
-          </div>
-        )}
       </div>
 
       {/* Right cluster: action button + speaker */}

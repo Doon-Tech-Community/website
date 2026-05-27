@@ -2,7 +2,6 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Press_Start_2P, VT323 } from "next/font/google";
 import Nav from "@/components/Nav";
-import ProfileCompletionGate from "@/components/ProfileCompletionGate";
 import SoundProvider from "@/components/SoundProvider";
 import PokedexTilt from "@/components/PokedexTilt";
 import DeviceControls from "@/components/DeviceControls";
@@ -53,7 +52,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${press.variable} ${vt.variable}`}>
       <body>
-        <ProfileCompletionGate />
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-[var(--led-yel)] focus:text-[var(--shell-ink)] focus:px-3 focus:py-2"

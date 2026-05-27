@@ -131,7 +131,7 @@ app/
   sitemap.ts, robots.ts, not-found.tsx, icon.svg, apple-icon.tsx
 components/
   Nav, NavLinks, AttendeeCard, AttendeeForm, OrganizerAuthButton
-  Avatar, TagChip, BadgePill, FiltersBar, ProfileCompletionGate
+  Avatar, TagChip, BadgePill, FiltersBar
   PokedexTilt, PowerButton, DeviceControls, SoundProvider
   (admin: BadgesAdmin, EventsAdmin, TagsAdmin, OrganizerAccessAdmin, AdminAttendeesTable)
 lib/
