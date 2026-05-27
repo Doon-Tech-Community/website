@@ -4,7 +4,7 @@ A collectible attendee index for every face in the Doon Tech Community.
 
 ## Stack
 
-- Next.js 14 (App Router) + TypeScript + Tailwind CSS
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS
 - Appwrite TablesDB, Auth (email OTP), Storage
 - Server-side rendering throughout — server components for reads, server actions for writes/auth/upload
 - Dynamic OG images via `next/og`
