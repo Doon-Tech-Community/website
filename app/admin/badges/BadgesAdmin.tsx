@@ -73,7 +73,7 @@ export default function BadgesAdmin({
           </h2>
           <p className="text-sm text-inkSoft mb-3">
             The Speaker badge is our first reward — award it to anyone who&apos;s taken the stage
-            at a DTC meetup.
+            at a DTC event.
           </p>
           <button onClick={seed} disabled={pending} className="btn btn-primary">
             {pending ? "Seeding…" : "🎤 Seed Speaker badge"}

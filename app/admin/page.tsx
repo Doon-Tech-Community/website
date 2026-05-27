@@ -17,7 +17,7 @@ export default async function AdminPage() {
         <p className="text-inkSoft">
           {user
             ? "Your account doesn't have the organizer label. Ask an admin to grant it."
-            : "Sign in as an organizer to manage developers and meetups."}
+            : "Sign in as an organizer to manage developers and events."}
         </p>
         <OrganizerAuthButton next="/admin" />
       </div>
@@ -40,7 +40,7 @@ export default async function AdminPage() {
         </div>
         <div className="flex gap-2">
           <Link href="/admin/attendees/new" className="btn btn-primary">+ New developer</Link>
-          <Link href="/admin/meetups" className="btn btn-ghost">Meetups</Link>
+          <Link href="/admin/events" className="btn btn-ghost">Events</Link>
           <Link href="/admin/tags" className="btn btn-ghost">Tags</Link>
           <Link href="/admin/badges" className="btn btn-ghost">🏅 Badges</Link>
           <OrganizerAuthButton />
@@ -49,7 +49,7 @@ export default async function AdminPage() {
 
       <section className="grid grid-cols-3 gap-3">
         <Stat label="Attendees" value={attendeeCount} />
-        <Stat label="Meetups" value={meetupCount} />
+        <Stat label="Events" value={meetupCount} />
         <Stat label="Tags" value={tagCount} />
       </section>
 

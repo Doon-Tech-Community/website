@@ -67,5 +67,6 @@ export interface AttendeeListItem {
   avatar_url: string;
   status: AttendeeStatus;
   tags: Tag[];
+  level: number;
   badge_count: number;
 }

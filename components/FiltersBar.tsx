@@ -40,14 +40,14 @@ export default function FiltersBar({ tags }: { tags: Tag[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col md:flex-row gap-3">
-        <label className="flex-1">
+    <div className="filters-bar flex flex-col gap-3">
+      <div className="filters-bar__fields flex flex-col md:flex-row gap-3">
+        <label className="flex-1 min-w-0">
           <span className="sr-only">Search attendees</span>
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name, company, role, skill…"
+            placeholder="Search attendees"
             className="input"
             aria-label="Search attendees"
           />
@@ -58,12 +58,12 @@ export default function FiltersBar({ tags }: { tags: Tag[] }) {
           className="input md:w-48"
           aria-label="Sort by"
         >
-          <option value="name">Sort: A–Z</option>
-          <option value="level">Highest level</option>
-          <option value="recent">Recently updated</option>
+          <option value="name">Sort: A-Z</option>
+          <option value="level">Level</option>
+          <option value="recent">Recent</option>
         </select>
       </div>
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
+      <div className="filters-bar__tags flex flex-wrap gap-2" role="group" aria-label="Filter by tag">
         {tags.map((t) => {
           const active = activeTags.has(t.name);
           return (
@@ -93,7 +93,7 @@ export default function FiltersBar({ tags }: { tags: Tag[] }) {
             Clear
           </button>
         )}
-        {pending && <span className="text-xs text-slate-400 self-center">Updating…</span>}
+        {pending && <span className="text-xs text-slate-400 self-center">Updating...</span>}
       </div>
     </div>
   );

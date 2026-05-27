@@ -19,7 +19,8 @@ import {
   sessionAccount
 } from "./appwrite";
 import { getCurrentUser } from "./auth";
-import type { AttendeeStatus, TagType } from "./types";
+import { calculateLevelScore, type LevelAttendeeInput } from "./levels";
+import type { AttendeeStatus, Rarity, TagType } from "./types";
 
 const db = APPWRITE_DATABASE_ID;
 
@@ -267,6 +268,68 @@ async function syncUserName(userId: string | undefined, name: string, currentUse
   await adminUsers().updateName({ userId, name: cleanName });
 }
 
+function cleanLevelInput(data: Record<string, unknown>, createdAt: string): LevelAttendeeInput {
+  return {
+    createdAt,
+    bio: sanitizeMultiline(data.bio, 4000),
+    role_title: sanitize(data.role_title, 200),
+    company: sanitize(data.company, 200),
+    location: sanitize(data.location, 200),
+    avatar_file_id: sanitize(data.avatar_file_id, 100),
+    linkedin_url: sanitize(data.linkedin_url, 500),
+    github_url: sanitize(data.github_url, 500),
+    website_url: sanitize(data.website_url, 500),
+    preferred_stack: sanitize(data.preferred_stack, 200),
+    favorite_topic: sanitize(data.favorite_topic, 200),
+    tag_ids: Array.isArray(data.tag_ids) ? (data.tag_ids as string[]) : []
+  };
+}
+
+async function badgeRaritiesForAttendee(attendeeId: string): Promise<Rarity[]> {
+  const dbx = adminTables();
+  const links = await dbx.listRows({
+    databaseId: db,
+    tableId: COLLECTIONS.attendee_badges,
+    queries: [Query.equal("attendee_id", attendeeId), Query.limit(500)]
+  });
+  const badgeIds = Array.from(
+    new Set(links.rows.map((d) => (d as unknown as { badge_id?: string }).badge_id).filter(Boolean))
+  ) as string[];
+  if (badgeIds.length === 0) return [];
+
+  const badges = await dbx.listRows({
+    databaseId: db,
+    tableId: COLLECTIONS.badges,
+    queries: [Query.equal("$id", badgeIds), Query.limit(badgeIds.length)]
+  });
+  return badges.rows.map(
+    (d) => ((d as unknown as { rarity?: Rarity }).rarity ?? "common") as Rarity
+  );
+}
+
+async function recomputeAttendeeLevel(attendeeId: string): Promise<void> {
+  const dbx = adminTables();
+  const attendee = await dbx.getRow({
+    databaseId: db,
+    tableId: COLLECTIONS.attendees,
+    rowId: attendeeId
+  });
+  const rarities = await badgeRaritiesForAttendee(attendeeId);
+  const score = calculateLevelScore(
+    cleanLevelInput(attendee as unknown as Record<string, unknown>, attendee.$createdAt),
+    rarities
+  );
+
+  if (Number((attendee as unknown as { level?: number }).level ?? 1) !== score.level) {
+    await dbx.updateRow({
+      databaseId: db,
+      tableId: COLLECTIONS.attendees,
+      rowId: attendeeId,
+      data: { level: score.level }
+    });
+  }
+}
+
 export async function createMyAttendeeProfile(
   payload: AttendeeFormPayload
 ): Promise<SaveAttendeeResult> {
@@ -306,17 +369,22 @@ export async function createMyAttendeeProfile(
     user_id: u.id,
     preferred_stack: sanitize(payload.preferred_stack, 200),
     favorite_topic: sanitize(payload.favorite_topic, 200),
-    level: Math.max(1, Math.min(99, Number(payload.level) || 1)),
     tag_ids: (payload.tag_ids ?? []).slice(0, 30).map((t) => sanitize(t, 100))
+  };
+  const createdAt = new Date().toISOString();
+  const dataWithLevel = {
+    ...data,
+    level: calculateLevelScore(cleanLevelInput(data, createdAt), []).level
   };
 
   const doc = await dbx.createRow({
     databaseId: db,
     tableId: COLLECTIONS.attendees,
     rowId: ID.unique(),
-    data,
+    data: dataWithLevel,
     permissions: attendeePermissions(u.id)
   });
+  await recomputeAttendeeLevel(doc.$id);
   await syncUserName(u.id, name, u.id);
   revalidatePath("/");
   revalidatePath("/dex");
@@ -352,17 +420,22 @@ export async function createAttendee(payload: AttendeeFormPayload): Promise<Save
     user_id: sanitize(payload.user_id, 100),
     preferred_stack: sanitize(payload.preferred_stack, 200),
     favorite_topic: sanitize(payload.favorite_topic, 200),
-    level: Math.max(1, Math.min(99, Number(payload.level) || 1)),
     tag_ids: (payload.tag_ids ?? []).slice(0, 30).map((t) => sanitize(t, 100))
+  };
+  const createdAt = new Date().toISOString();
+  const dataWithLevel = {
+    ...data,
+    level: calculateLevelScore(cleanLevelInput(data, createdAt), []).level
   };
 
   const doc = await adminTables().createRow({
     databaseId: db,
     tableId: COLLECTIONS.attendees,
     rowId: ID.unique(),
-    data,
+    data: dataWithLevel,
     permissions: attendeePermissions(data.user_id)
   });
+  await recomputeAttendeeLevel(doc.$id);
   await syncUserName(data.user_id, name, u.id);
   revalidatePath("/dex");
   revalidatePath("/admin");
@@ -403,7 +476,6 @@ export async function updateAttendee(payload: AttendeeFormPayload): Promise<Save
     website_url: sanitize(payload.website_url, 500),
     preferred_stack: sanitize(payload.preferred_stack, 200),
     favorite_topic: sanitize(payload.favorite_topic, 200),
-    level: Math.max(1, Math.min(99, Number(payload.level) || 1)),
     tag_ids: (payload.tag_ids ?? []).slice(0, 30).map((t) => sanitize(t, 100))
   };
 
@@ -436,6 +508,7 @@ export async function updateAttendee(payload: AttendeeFormPayload): Promise<Save
       permissions: attendeePermissions(newUserId)
     });
   }
+  await recomputeAttendeeLevel(payload.id);
 
   revalidatePath("/dex");
   revalidatePath("/admin");
@@ -531,6 +604,7 @@ export async function mergeAttendees(
     rowId: sourceId,
     data: { status: "archived" }
   });
+  await recomputeAttendeeLevel(targetId);
   revalidatePath("/dex");
   revalidatePath("/admin");
   return { ok: true };
@@ -618,6 +692,7 @@ export async function deleteTag(tagId: string): Promise<DeleteTagResult> {
           rowId: attendee.$id,
           data: { tag_ids: nextTags }
         });
+        await recomputeAttendeeLevel(attendee.$id);
         if (attendee.slug) revalidatePath(`/attendees/${attendee.slug}`);
       }
 
@@ -661,7 +736,7 @@ export async function createMeetup(formData: FormData): Promise<CreateMeetupResu
 
   if (!title) return { ok: false, error: "Title is required." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return { ok: false, error: "Enter a valid meetup date." };
+    return { ok: false, error: "Enter a valid event date." };
   }
   if (externalUrl && !/^https?:\/\/\S+$/i.test(externalUrl)) {
     return { ok: false, error: "External URL must start with http:// or https://." };
@@ -681,8 +756,8 @@ export async function createMeetup(formData: FormData): Promise<CreateMeetupResu
 
   revalidatePath("/");
   revalidatePath("/admin");
-  revalidatePath("/admin/meetups");
-  revalidatePath("/meetups");
+  revalidatePath("/admin/events");
+  revalidatePath("/events");
   return { ok: true, id: doc.$id };
 }
 
@@ -696,10 +771,10 @@ export async function updateMeetup(formData: FormData): Promise<CreateMeetupResu
   const date = sanitize(formData.get("date"), 10).trim();
   const externalUrl = sanitize(formData.get("external_url"), 500).trim();
 
-  if (!id) return { ok: false, error: "Missing meetup id." };
+  if (!id) return { ok: false, error: "Missing event id." };
   if (!title) return { ok: false, error: "Title is required." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return { ok: false, error: "Enter a valid meetup date." };
+    return { ok: false, error: "Enter a valid event date." };
   }
   if (externalUrl && !/^https?:\/\/\S+$/i.test(externalUrl)) {
     return { ok: false, error: "External URL must start with http:// or https://." };
@@ -719,8 +794,8 @@ export async function updateMeetup(formData: FormData): Promise<CreateMeetupResu
 
   revalidatePath("/");
   revalidatePath("/admin");
-  revalidatePath("/admin/meetups");
-  revalidatePath("/meetups");
+  revalidatePath("/admin/events");
+  revalidatePath("/events");
   return { ok: true, id };
 }
 
@@ -781,7 +856,7 @@ export async function createBadge(formData: FormData): Promise<CreateBadgeResult
 export async function seedSpeakerBadge(): Promise<CreateBadgeResult> {
   const fd = new FormData();
   fd.set("name", "Speaker");
-  fd.set("description", "Took the stage at a Doon Tech Community meetup.");
+  fd.set("description", "Took the stage at a Doon Tech Community event.");
   fd.set("icon", "🎤");
   fd.set("rarity", "epic");
   return createBadge(fd);
@@ -805,7 +880,10 @@ export async function assignBadgeToAttendee(
       Query.limit(1)
     ]
   });
-  if (dup.rows[0]) return { ok: true };
+  if (dup.rows[0]) {
+    await recomputeAttendeeLevel(attendeeId);
+    return { ok: true };
+  }
 
   await dbx.createRow({
     databaseId: db,
@@ -817,6 +895,7 @@ export async function assignBadgeToAttendee(
       awarded_at: new Date().toISOString()
     }
   });
+  await recomputeAttendeeLevel(attendeeId);
 
   // Find slug to revalidate the public page.
   try {
@@ -831,6 +910,7 @@ export async function assignBadgeToAttendee(
   } catch {
     /* ignore */
   }
+  revalidatePath("/dex");
   revalidatePath("/admin");
   return { ok: true };
 }
@@ -842,12 +922,14 @@ export async function unassignAttendeeBadge(
   if (!u || !u.labels.includes("organizer")) return { ok: false, error: "Not allowed." };
   const dbx = adminTables();
   let slug: string | undefined;
+  let attendeeId: string | undefined;
   try {
     const link = (await dbx.getRow({
       databaseId: db,
       tableId: COLLECTIONS.attendee_badges,
       rowId: attendeeBadgeId
     })) as unknown as { attendee_id?: string };
+    attendeeId = link.attendee_id;
     if (link.attendee_id) {
       const a = (await dbx.getRow({
         databaseId: db,
@@ -864,7 +946,9 @@ export async function unassignAttendeeBadge(
     tableId: COLLECTIONS.attendee_badges,
     rowId: attendeeBadgeId
   });
+  if (attendeeId) await recomputeAttendeeLevel(attendeeId);
   if (slug) revalidatePath(`/attendees/${slug}`);
+  revalidatePath("/dex");
   revalidatePath("/admin");
   return { ok: true };
 }

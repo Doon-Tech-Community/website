@@ -42,14 +42,14 @@ export default async function DexPage({ searchParams }: PageProps) {
   if (sort !== "name") qp.set("sort", sort);
 
   return (
-    <div className="pt-8 flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <div className="flex items-center gap-2 text-[0.6rem] uppercase tracking-widest text-accent pixel">
+    <div className="dex-page pt-8 flex flex-col gap-6">
+      <header className="dex-page__header flex flex-col gap-2">
+        <div className="dex-page__eyebrow flex items-center gap-2 text-[0.6rem] uppercase tracking-widest text-accent pixel">
           <span aria-hidden>►</span> Doon Tech Community
         </div>
-        <h1 className="text-xl sm:text-2xl pixel">THE POKÉDEX</h1>
+        <h1 className="dex-page__title text-xl sm:text-2xl pixel">THE POKÉDEX</h1>
         <p className="hidden sm:block max-w-2xl">
-          A collectible developer index for every face in the Doon Tech Community. Browse profiles, scan skills, and remember the developers you meet at meetups.
+          A collectible developer index for every face in the Doon Tech Community. Browse profiles, scan skills, and remember the developers you meet at events.
         </p>
       </header>
 
@@ -57,7 +57,7 @@ export default async function DexPage({ searchParams }: PageProps) {
         <FiltersBar tags={tags} />
       </Suspense>
 
-      <div className="flex items-center justify-between text-sm text-inkSoft">
+      <div className="dex-page__meta flex items-center justify-between text-sm text-inkSoft">
         <span>{total} attendee{total === 1 ? "" : "s"}</span>
         <span>Page {page} of {totalPages}</span>
       </div>
@@ -65,10 +65,10 @@ export default async function DexPage({ searchParams }: PageProps) {
       {items.length === 0 ? (
         <div className="card-frame rounded-2xl p-10 text-center">
           <p className="text-lg font-semibold mb-2">No attendees match your filters.</p>
-          <p className="text-sm text-inkSoft">Try clearing filters or check back after the next meetup.</p>
+          <p className="text-sm text-inkSoft">Try clearing filters or check back after the next event.</p>
         </div>
       ) : (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <ul className="attendee-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {items.map((a) => (
             <li key={a.id}>
               <AttendeeCard a={a} />

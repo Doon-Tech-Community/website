@@ -6,6 +6,7 @@ import AttendeeCard from "@/components/AttendeeCard";
 import BadgePill from "@/components/BadgePill";
 import TagChip from "@/components/TagChip";
 import { avatarUrl } from "@/lib/appwrite";
+import { calculateLevelScore } from "@/lib/levels";
 import {
   badgesForAttendee,
   getAttendeeBySlug,
@@ -48,6 +49,7 @@ export default async function AttendeePage({ params }: PageProps) {
     relatedAttendees(a)
   ]);
   const avatar = avatarUrl(a.avatar_file_id, 120);
+  const level = calculateLevelScore(a, badges.map((b) => b.rarity)).level;
 
   return (
     <article className="pt-8 flex flex-col gap-6">
@@ -80,6 +82,7 @@ export default async function AttendeePage({ params }: PageProps) {
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 self-start md:self-center">
+            <Stat label="Level" value={level} />
             <Stat label="Badges" value={badges.length} />
           </div>
         </div>

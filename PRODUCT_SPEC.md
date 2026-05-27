@@ -2,65 +2,85 @@
 > A collectible attendee index for every face in the Doon Tech Community.
 
 ## Overview
-A web app that catalogs every attendee from Doon Tech Community meetups as Pokédex-style profile cards. The app lets visitors browse, search, and filter attendees, view their meetup history, and explore fun community metadata like specialties, tech stack, favorite topics, and attendance badges. Organizers can create and edit attendee profiles, import attendees from meetups, and manage attendance records. The experience is playful, visual, and community-first, while still being useful as a living member directory for the Dehradun tech scene.
+A web app that catalogs every attendee from Doon Tech Community events as Pokédex-style profile cards. The app lets visitors browse, search, and filter attendees, view their event history, and explore fun community metadata like specialties, tech stack, favorite topics, and attendance badges. Organizers can create and edit attendee profiles, import attendees from events, and manage attendance records. The experience is playful, visual, and community-first, while still being useful as a living member directory for the Dehradun tech scene.
 
 ## Target Audience
 ### Community attendee
-- **Needs:** Browse people they met at meetups, remember names, and learn what others build and talk about.
+- **Needs:** Browse people they met at events, remember names, and learn what others build and talk about.
 - **Pain points:** Forgets names after events, has no easy way to find attendees by interests, and wants a fun reason to revisit the community.
 
 ### Community organizer
-- **Needs:** Maintain an up-to-date attendee catalog, add new meetup attendees quickly, and keep profile data consistent.
+- **Needs:** Maintain an up-to-date attendee catalog, add new event attendees quickly, and keep profile data consistent.
 - **Pain points:** Manually tracking attendance is tedious, profile data is incomplete, and updates are hard to manage after events.
 
 ### Newcomer to Doon Tech Community
 - **Needs:** Discover who attends, what kinds of people are in the community, and who to connect with at future events.
-- **Pain points:** Feels disconnected before the first meetup and lacks context on the people in the room.
+- **Pain points:** Feels disconnected before the first event and lacks context on the people in the room.
 
 ## Features
-### Attendee Pokedex _(P0)_
-A browsable grid of attendee profile cards with avatar, name, role, specialties, and attendance count.
+Status labels:
+- **Implemented:** Present in the current app.
+- **Partial:** Core flow exists, but part of the described feature is still missing.
+- **Planned:** Yet to be added.
+
+### Attendee Pokedex _(P0, Partial)_
+A browsable grid of attendee profile cards with avatar, name, role, specialties, level, and badge count.
 - **User value:** Makes the community feel collectible and easy to explore at a glance.
+- **Status:** Partial. The grid exists; verified attendance count is not implemented yet.
 
-### Attendee profile pages _(P0)_
-Detailed profile pages with bio, current role, company, social links, meetup history, badges, and fun stats.
+### Attendee profile pages _(P0, Partial)_
+Detailed profile pages with bio, current role, company, social links, event history, badges, and fun stats.
 - **User value:** Helps members remember people and understand their interests quickly.
+- **Status:** Partial. Profiles, badges, links, tags, and level exist; event history is not implemented yet.
 
-### Search and filters _(P0)_
-Search attendees by name, company, role, tags, meetup attended, and skill set.
+### Search and filters _(P0, Partial)_
+Search attendees by name, company, role, tags, event attended, and skill set.
 - **User value:** Lets users find the right person fast without scrolling the whole directory.
+- **Status:** Partial. Name/company/role search, tag filtering, and sorting exist; event-attended filters are not implemented yet.
 
-### Organizer attendee management _(P0)_
+### Organizer attendee management _(P0, Implemented)_
 Admin tools to create, edit, archive, and merge attendee profiles.
-- **User value:** Keeps the directory accurate and maintainable after every meetup.
+- **User value:** Keeps the directory accurate and maintainable after every event.
+- **Status:** Implemented.
 
-### Meetup index _(P0)_
-A simple read-only list of past and upcoming Doon Tech Community meetups, each linking out to its external event page (e.g. Luma).
+### Event index _(P0, Implemented)_
+A simple read-only list of past and upcoming Doon Tech Community events, each linking out to its external event page (e.g. Luma).
 - **User value:** Gives newcomers and members a quick history of what the community has run, without duplicating event-platform features.
+- **Status:** Implemented.
 
-### Badge and rarity system _(P1)_
-Award playful badges such as first meetup, frequent attendee, speaker, mentor, or open source contributor.
+### Badge and rarity system _(P1, Implemented)_
+Award playful badges such as first event, frequent attendee, speaker, mentor, or open source contributor.
 - **User value:** Adds gamification and encourages participation.
+- **Status:** Implemented. Badge types can be created and organizer-awarded; attendance-specific automation is not implemented yet.
 
-### Featured attendees and spotlights _(P1)_
+### Derived level system _(P1, Implemented)_
+Show an attendee level derived from profile completeness, awarded badge rarity, and account tenure. Level is calculated by the server and cannot be manually edited by users.
+- **User value:** Gives the Pokedex a playful progression mechanic while keeping the score tied to real profile quality and organizer-awarded recognition.
+- **Status:** Implemented.
+
+### Featured attendees and spotlights _(P1, Planned)_
 Highlight selected members on the homepage or a special spotlight section.
 - **User value:** Makes it easy to introduce active community members and speakers.
+- **Status:** Planned. The `featured` table exists in the schema, but no public spotlight UI or admin workflow is implemented yet.
 
-### Public profile sharing _(P1)_
+### Public profile sharing _(P1, Implemented)_
 Generate shareable links for attendee profiles with social preview metadata.
 - **User value:** Helps attendees share their presence and increases community visibility.
+- **Status:** Implemented via public profile URLs and dynamic OG images.
 
-### Community stats dashboard _(P2)_
-Show metrics like total attendees, most common skills, most attended meetup, and active cities or companies.
+### Community stats dashboard _(P2, Planned)_
+Show metrics like total attendees, most common skills, most attended event, and active cities or companies.
 - **User value:** Provides useful insight into the community composition.
+- **Status:** Planned. Basic counts exist in the landing/admin UI, but the fuller stats dashboard is not implemented yet.
 
 ## User Stories
-- As a community attendee, I want to browse attendee cards so that I can remember who I met at previous meetups.
+- As a community attendee, I want to browse attendee cards so that I can remember who I met at previous events.
 - As a newcomer, I want to search by interests and job roles so that I can find people relevant to me.
 - As an organizer, I want to create and edit attendee profiles so that the Pokedex stays accurate.
 - As a community attendee, I want to open a profile page so that I can learn more about someone before reaching out.
-- As a newcomer, I want to see the list of past and upcoming meetups so that I can jump to the event page and join the next one.
+- As a newcomer, I want to see the list of past and upcoming events so that I can jump to the event page and join the next one.
 - As an organizer, I want to award badges so that I can make participation feel fun and recognizable.
+- As a community attendee, I want levels to be earned from profile completeness, badges, and tenure so that progression feels credible.
 - As an organizer, I want to feature selected attendees so that I can spotlight speakers and active members.
 
 ## Design Spec
@@ -105,11 +125,81 @@ Show metrics like total attendees, most common skills, most attended meetup, and
 - 3D tilt and decorative chrome degrade gracefully under reduced motion.
 
 ### Key screens
-- **Landing (`/`):** Boot screen inside the LCD. "SYSTEM READY" LED row, two-line pixel title `DOON TECH COMMUNITY`, intro paragraph in VT323, three stat blocks (Developers / Meetups / Tags), a primary `▶ ENTER POKÉDEX` button, keyboard hint `PRESS A OR ENTER TO START`, and small secondary links to `Meetups →` and `Admin →`.
+- **Landing (`/`):** Boot screen inside the LCD. "SYSTEM READY" LED row, two-line pixel title `DOON TECH COMMUNITY`, intro paragraph in VT323, three stat blocks (Developers / Events / Tags), a primary `▶ ENTER POKÉDEX` button, keyboard hint `PRESS A OR ENTER TO START`, and small secondary links to `Events →` and `Admin →`.
 - **Pokédex Grid (`/dex`):** Header with a coral `►` bullet, pixel `THE POKÉDEX` title, and a one-line description. Below it: a search input + sort dropdown row, a horizontal row of tag-filter chips (active chips switch to the blue button gradient), a result-count + page-count strip, the attendee card grid, a chip-style pagination row, and a glass empty-state card when filters return nothing.
 - **Attendee Profile (`/attendees/[slug]`):** A frame card with a coral→badge→gold gradient banner, large square avatar overlapping the banner, name with a `LVL N` epic chip, role · company, location, tag chips, and a small stat block grid (Badges / Level). Below: a two-column layout — Bio + Developer Card (preferred stack, favorite topic, company, location) on the left; Badges, Social Links, and Related Attendees on the right.
-- **Organizer Dashboard (`/admin`):** Logged-out state shows a centered glass card prompting organizer sign-in. Signed in: page title with a green `ORGANIZER` chip, a `+ New developer` primary button, three stat blocks (Attendees / Meetups / Tags), and the attendees table with search, edit/archive row actions, and a merge mode that selects a source and target.
-- **Meetups (`/meetups`):** A simple two-column grid of glass cards. Each card shows the title, an `upcoming` (gold) or `completed` (green) chip derived from the date, the date line, a two-line description, and an `Open event ↗` link. The whole card links out to the external event URL.
+- **Organizer Dashboard (`/admin`):** Logged-out state shows a centered glass card prompting organizer sign-in. Signed in: page title with a green `ORGANIZER` chip, a `+ New developer` primary button, three stat blocks (Attendees / Events / Tags), and the attendees table with search, edit/archive row actions, and a merge mode that selects a source and target.
+- **Events (`/events`):** A simple two-column grid of glass cards. Each card shows the title, an `upcoming` (gold) or `completed` (green) chip derived from the date, the date line, a two-line description, and an `Open event ↗` link. The whole card links out to the external event URL.
+
+## Level Calculation
+Levels are derived, not manually edited. The implementation source of truth is `lib/levels.ts`.
+
+```txt
+xp = profile completeness XP + badge rarity XP + tenure XP
+level = highest nonlinear threshold reached by xp
+```
+
+### XP sources
+Profile completeness is capped at 80 XP:
+
+| Signal | XP |
+| --- | ---: |
+| Avatar uploaded | 10 |
+| Role/title filled | 10 |
+| Company filled | 10 |
+| Location filled | 10 |
+| Bio has at least 40 normalized characters | 10 |
+| At least one social/personal link | 10 |
+| One tag | 5 |
+| Two or more tags | 10 |
+| Preferred stack or favorite topic filled | 10 |
+
+Badge XP is based on organizer-defined rarity:
+
+| Rarity | XP |
+| --- | ---: |
+| common | 25 |
+| rare | 75 |
+| epic | 180 |
+| legendary | 400 |
+
+Tenure adds 5 XP per full month since the attendee record was created, capped at 60 XP.
+
+### Thresholds
+Levels use nonlinear thresholds so early progression is quick and higher levels require badges or long-term participation:
+
+| Level | XP required |
+| ---: | ---: |
+| 1 | 0 |
+| 2 | 50 |
+| 3 | 125 |
+| 4 | 225 |
+| 5 | 375 |
+| 6 | 575 |
+| 7 | 850 |
+| 8 | 1200 |
+| 9 | 1650 |
+| 10 | 2200 |
+| 11 | 2900 |
+| 12 | 3700 |
+| 13 | 4700 |
+| 14 | 6000 |
+| 15 | 7600 |
+| 16 | 9600 |
+| 17 | 12000 |
+| 18 | 15000 |
+| 19 | 18500 |
+| 20 | 22500 |
+
+### Recalculation behavior
+`attendee.level` is stored as a server-computed cache for display and sorting fallback. It is recalculated when:
+
+- an attendee profile is created or updated
+- a badge is awarded or removed
+- attendees are merged
+- a tag is deleted and removed from attendee profiles
+
+The `/dex?sort=level` listing recomputes level from live profile, badge, and tenure data before sorting the filtered result set. Current implementation cap: live level sorting considers up to 1000 filtered attendees.
 
 ## Data Model
 ### user
@@ -143,6 +233,10 @@ Show metrics like total attendees, most common skills, most attended meetup, and
 | website_url | string | Optional personal site. |
 | status | string | Values: active, archived. |
 | user_id | string | Optional link to a user account for self-service editing. |
+| preferred_stack | string | Optional favorite/current technology stack. |
+| favorite_topic | string | Optional favorite topic to discuss. |
+| level | integer | Server-computed cache derived from profile completeness, badge rarity, and tenure. Not user-editable. |
+| tag_ids | string[] | Array of tag ids used for filters and profile chips. |
 **Relationships:** Primary directory entity. An attendee may be linked to one user account and can have many attendance records and badges.
 
 ### tag
@@ -165,13 +259,13 @@ Show metrics like total attendees, most common skills, most attended meetup, and
 | tag_id | string | References tag. |
 **Relationships:** Join table linking attendees and tags.
 
-### meetup
+### event
 | Field | Type | Notes |
 | --- | --- | --- |
-| id | string | Unique meetup identifier. |
+| id | string | Unique event identifier. |
 | createdAt | datetime | Creation timestamp. |
 | updatedAt | datetime | Update timestamp. |
-| title | string | Meetup name. |
+| title | string | Event name. |
 | description | string | Event summary. |
 | date | date | Event date. |
 | external_url | string | Link to the external event page (e.g. Luma). |
@@ -216,7 +310,7 @@ Show metrics like total attendees, most common skills, most attended meetup, and
 ### `GET /attendees`
 List attendees with search, filters, sorting, and pagination.
 - **Request:** None
-- **Response:** [{ id, name, slug, role_title, company, avatar_url, tags[], badge_count }]
+- **Response:** [{ id, name, slug, role_title, company, avatar_url, tags[], level, badge_count }]
 
 ## Recommended Tech Stack
 - **Frontend:** Next.js with TypeScript and Tailwind CSS
@@ -237,4 +331,4 @@ List attendees with search, filters, sorting, and pagination.
 ## Open Questions
 - Should attendees be publicly visible to anyone, or only to logged-in community members?
 - Do you want attendees to be able to claim and edit their own profiles, or should only organizers manage profiles?
-- Should the app include playful stat fields like 'preferred stack', 'favorite topic', and 'level' to make it feel more like a true Pokédex?
+- Should the app add verified event check-ins as another level signal later?

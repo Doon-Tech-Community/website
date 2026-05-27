@@ -7,7 +7,7 @@ export default function AttendeeCard({ a }: { a: AttendeeListItem }) {
   return (
     <Link
       href={`/attendees/${a.slug}`}
-      className="card-frame rounded-2xl p-4 flex flex-col gap-3 group"
+      className="attendee-card card-frame rounded-2xl p-4 flex flex-col gap-3 group"
       aria-label={`${a.name}, ${a.role_title || "member"}`}
     >
       <div className="flex items-start gap-3">
@@ -24,9 +24,9 @@ export default function AttendeeCard({ a }: { a: AttendeeListItem }) {
         ))}
         {a.tags.length > 4 && <span className="chip">+{a.tags.length - 4}</span>}
       </div>
-      <div className="mt-auto flex items-center justify-between text-xs text-inkSoft pt-2 border-t border-ink/15">
+      <div className="mt-auto flex items-center justify-between gap-3 text-xs text-inkSoft pt-2 border-t border-ink/15">
+        <span className="pixel text-[0.55rem] text-accent">LV {a.level}</span>
         <span>{a.badge_count} badge{a.badge_count === 1 ? "" : "s"}</span>
-        <span className="opacity-0 group-hover:opacity-100 transition text-accent font-semibold">View profile →</span>
       </div>
     </Link>
   );

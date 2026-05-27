@@ -7,6 +7,7 @@ import {
   avatarUrl,
   sessionTables
 } from "./appwrite";
+import { calculateLevelScore, type LevelScore } from "./levels";
 import type {
   Attendee,
   AttendeeBadge,
@@ -158,19 +159,69 @@ export async function listAllBadges(): Promise<Badge[]> {
   return res.rows.map((d) => mapBadge(d as Doc & Record<string, unknown>));
 }
 
-async function badgeCountsFor(attendeeIds: string[]): Promise<Map<string, number>> {
-  const counts = new Map<string, number>();
-  if (attendeeIds.length === 0) return counts;
-  const res = await sessionTables().listRows({
+interface BadgeStats {
+  count: number;
+  rarities: Rarity[];
+}
+
+async function badgeStatsFor(attendeeIds: string[]): Promise<Map<string, BadgeStats>> {
+  const stats = new Map<string, BadgeStats>();
+  if (attendeeIds.length === 0) return stats;
+
+  const linksRes = await sessionTables().listRows({
     databaseId: db,
     tableId: COLLECTIONS.attendee_badges,
     queries: [Query.equal("attendee_id", attendeeIds), Query.limit(1000)]
   });
-  for (const d of res.rows) {
-    const aid = (d as unknown as { attendee_id: string }).attendee_id;
-    counts.set(aid, (counts.get(aid) ?? 0) + 1);
+  const links = linksRes.rows as unknown as Array<{ attendee_id: string; badge_id: string }>;
+  if (links.length === 0) return stats;
+
+  const badgeIds = Array.from(new Set(links.map((l) => l.badge_id)));
+  const badgesRes = await sessionTables().listRows({
+    databaseId: db,
+    tableId: COLLECTIONS.badges,
+    queries: [Query.equal("$id", badgeIds), Query.limit(badgeIds.length)]
+  });
+  const rarityById = new Map(
+    badgesRes.rows.map((d) => [
+      d.$id,
+      ((d as unknown as { rarity?: Rarity }).rarity ?? "common") as Rarity
+    ])
+  );
+
+  for (const link of links) {
+    const rarity = rarityById.get(link.badge_id) ?? "common";
+    const current = stats.get(link.attendee_id) ?? { count: 0, rarities: [] };
+    current.count += 1;
+    current.rarities.push(rarity);
+    stats.set(link.attendee_id, current);
   }
-  return counts;
+
+  return stats;
+}
+
+async function listRowsForComputedLevelSort(queries: string[]): Promise<{
+  rows: Array<Doc & Record<string, unknown>>;
+  total: number;
+}> {
+  const dbx = sessionTables();
+  const rows: Array<Doc & Record<string, unknown>> = [];
+  const batchSize = 100;
+  const maxRows = 1000;
+  let total = 0;
+
+  while (rows.length < maxRows) {
+    const res = await dbx.listRows({
+      databaseId: db,
+      tableId: COLLECTIONS.attendees,
+      queries: [...queries, Query.limit(batchSize), Query.offset(rows.length)]
+    });
+    total = res.total;
+    rows.push(...(res.rows as Array<Doc & Record<string, unknown>>));
+    if (rows.length >= res.total || res.rows.length < batchSize) break;
+  }
+
+  return { rows, total };
 }
 
 export async function badgesForAttendee(
@@ -221,18 +272,18 @@ export interface ListAttendeesResult {
 export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAttendeesResult> {
   const page = Math.max(1, p.page ?? 1);
   const pageSize = Math.max(1, Math.min(60, p.pageSize ?? 24));
-  const queries: string[] = [Query.limit(pageSize), Query.offset((page - 1) * pageSize)];
+  const filters: string[] = [];
 
-  if (!p.includeArchived) queries.push(Query.equal("status", "active"));
+  if (!p.includeArchived) filters.push(Query.equal("status", "active"));
 
   const q = (p.q ?? "").trim();
   if (q) {
-    queries.push(
+    filters.push(
       Query.or([Query.search("name", q), Query.search("company", q), Query.search("role_title", q)])
     );
   }
   const role = (p.role ?? "").trim();
-  if (role) queries.push(Query.search("role_title", role));
+  if (role) filters.push(Query.search("role_title", role));
 
   if (p.tag && p.tag.length > 0) {
     // Resolve tag names -> ids so callers can pass either
@@ -242,26 +293,54 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
     const tagIds = p.tag
       .map((t) => (byId.has(t) ? t : byName.get(t.toLowerCase())))
       .filter((x): x is string => !!x);
-    for (const tid of tagIds) queries.push(Query.contains("tag_ids", tid));
+    for (const tid of tagIds) filters.push(Query.contains("tag_ids", tid));
   }
 
   const sort = p.sort ?? "name";
-  if (sort === "name") queries.push(Query.orderAsc("name"));
-  else if (sort === "level") queries.push(Query.orderDesc("level"));
-  else if (sort === "recent") queries.push(Query.orderDesc("$updatedAt"));
+  let attendees: Attendee[];
+  let total: number;
+  let scoresById = new Map<string, LevelScore>();
+  let statsById = new Map<string, BadgeStats>();
 
-  const res = await sessionTables().listRows({
-    databaseId: db,
-    tableId: COLLECTIONS.attendees,
-    queries
-  });
-  const attendees = res.rows.map((d) => mapAttendee(d as Doc & Record<string, unknown>));
+  if (sort === "level") {
+    const res = await listRowsForComputedLevelSort(filters);
+    const allAttendees = res.rows.map((d) => mapAttendee(d));
+    statsById = await badgeStatsFor(allAttendees.map((a) => a.id));
+    const scored = allAttendees.map((a) => {
+      const score = calculateLevelScore(a, statsById.get(a.id)?.rarities ?? []);
+      scoresById.set(a.id, score);
+      return { attendee: a, score };
+    });
+    scored.sort((a, b) => {
+      if (b.score.level !== a.score.level) return b.score.level - a.score.level;
+      if (b.score.xp !== a.score.xp) return b.score.xp - a.score.xp;
+      return a.attendee.name.localeCompare(b.attendee.name);
+    });
+    total = res.total;
+    attendees = scored.slice((page - 1) * pageSize, page * pageSize).map((s) => s.attendee);
+  } else {
+    const queries = [...filters, Query.limit(pageSize), Query.offset((page - 1) * pageSize)];
+    if (sort === "recent") queries.push(Query.orderDesc("$updatedAt"));
+    else queries.push(Query.orderAsc("name"));
+
+    const res = await sessionTables().listRows({
+      databaseId: db,
+      tableId: COLLECTIONS.attendees,
+      queries
+    });
+    total = res.total;
+    attendees = res.rows.map((d) => mapAttendee(d as Doc & Record<string, unknown>));
+    statsById = await badgeStatsFor(attendees.map((a) => a.id));
+    scoresById = new Map(
+      attendees.map((a) => [
+        a.id,
+        calculateLevelScore(a, statsById.get(a.id)?.rarities ?? [])
+      ])
+    );
+  }
 
   const allTagIds = Array.from(new Set(attendees.flatMap((a) => a.tag_ids)));
-  const [tags, badgeCounts] = await Promise.all([
-    getTagsByIds(allTagIds),
-    badgeCountsFor(attendees.map((a) => a.id))
-  ]);
+  const tags = await getTagsByIds(allTagIds);
   const tagsById = new Map(tags.map((t) => [t.id, t]));
 
   const items: AttendeeListItem[] = attendees.map((a) => ({
@@ -273,10 +352,11 @@ export async function listAttendees(p: ListAttendeesParams = {}): Promise<ListAt
     avatar_url: avatarUrl(a.avatar_file_id, 56),
     status: a.status,
     tags: a.tag_ids.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t),
-    badge_count: badgeCounts.get(a.id) ?? 0
+    level: scoresById.get(a.id)?.level ?? a.level,
+    badge_count: statsById.get(a.id)?.count ?? 0
   }));
 
-  return { items, total: res.total, page, pageSize };
+  return { items, total, page, pageSize };
 }
 
 export async function tagsForAttendee(attendee: Attendee): Promise<Tag[]> {
@@ -306,9 +386,9 @@ export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<A
     .slice(0, limit);
 
   const allTagIds = Array.from(new Set(attendees.flatMap(({ a }) => a.tag_ids)));
-  const [tags, badgeCounts] = await Promise.all([
+  const [tags, badgeStats] = await Promise.all([
     getTagsByIds(allTagIds),
-    badgeCountsFor(attendees.map(({ a }) => a.id))
+    badgeStatsFor(attendees.map(({ a }) => a.id))
   ]);
   const tagsById = new Map(tags.map((t) => [t.id, t]));
 
@@ -321,7 +401,8 @@ export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<A
     avatar_url: avatarUrl(a.avatar_file_id, 56),
     status: a.status,
     tags: a.tag_ids.map((id) => tagsById.get(id)).filter((t): t is Tag => !!t),
-    badge_count: badgeCounts.get(a.id) ?? 0
+    level: calculateLevelScore(a, badgeStats.get(a.id)?.rarities ?? []).level,
+    badge_count: badgeStats.get(a.id)?.count ?? 0
   }));
 }
 

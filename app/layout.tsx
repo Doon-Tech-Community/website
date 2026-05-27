@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <div className="mx-auto max-w-6xl px-2 sm:px-4 lg:px-6 py-4 sm:py-6 dex-stage">
           <div className="dex-shell">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="device-topbar flex items-center gap-4 mb-4">
               <Link href="/" aria-label="Back to landing" className="shrink-0">
                 <div className="led-lens" aria-hidden />
               </Link>
@@ -76,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 href="https://chat.whatsapp.com/IV3kpbV3OVz7FJK8htIPa9"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="chip chip-success ml-auto"
+                className="community-chip chip chip-success ml-auto"
                 style={{ fontSize: "0.6rem", padding: "0.5rem 0.7rem" }}
                 aria-label="Join the Doon Tech Community on WhatsApp"
                 title="Join the Doon Tech Community on WhatsApp"
@@ -86,35 +86,35 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </a>
             </div>
 
-            <div className="dex-divider mb-4" aria-hidden />
+            <div className="device-divider dex-divider mb-4" aria-hidden />
 
             <Suspense fallback={<div style={{ minHeight: 44 }} />}>
               <Nav />
             </Suspense>
 
-            <div className="lcd-panel crt mt-4">
+            <div className="device-screen lcd-panel crt mt-4">
               <main id="main" className="min-h-[60vh] relative z-[1]">
                 {children}
               </main>
             </div>
 
-            <Suspense fallback={<div className="mt-5" style={{ minHeight: 84 }} />}>
+            <Suspense fallback={<div className="device-controls mt-5" style={{ minHeight: 84 }} />}>
               <DeviceControls />
             </Suspense>
 
-            <div className="dex-divider mt-4" aria-hidden />
+            <div className="device-divider device-divider--bottom dex-divider mt-4" aria-hidden />
 
             <footer
-              className="flex items-center justify-between gap-4 mt-3 text-xs sm:text-sm text-white"
+              className="device-footer flex items-center justify-between gap-4 mt-3 text-xs sm:text-sm text-white"
               style={{ textShadow: "0 1px 0 rgba(0,0,0,0.35)" }}
             >
               <PowerButton />
-              <div className="text-center">v1 · Dehradun</div>
+              <div className="device-footer__place text-center">v1 · Dehradun</div>
               <a
                 href="https://github.com/Doon-Tech-Community/website"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="chip"
+                className="device-github-link chip"
                 style={{ fontSize: "0.55rem", padding: "0.45rem 0.65rem" }}
                 aria-label="View source on GitHub"
                 title="View source on GitHub"

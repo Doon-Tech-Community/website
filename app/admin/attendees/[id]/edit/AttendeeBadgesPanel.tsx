@@ -88,7 +88,7 @@ export default function AttendeeBadgesPanel({
                 <li key={b.link_id} className="flex items-center gap-2 flex-wrap">
                   <BadgePill name={b.name} rarity={b.rarity} description={b.description} />
                   <span className="text-xs text-slate-400">
-                    awarded {new Date(b.awarded_at).toLocaleDateString()}
+                    awarded {new Date(b.awarded_at).toLocaleDateString("en-IN")}
                   </span>
                   <button
                     type="button"

@@ -1,27 +1,27 @@
 import { listAllMeetups } from "@/lib/queries";
 
 export const metadata = {
-  title: "Meetups",
-  description: "All Doon Tech Community meetups.",
-  alternates: { canonical: "/meetups" }
+  title: "Events",
+  description: "All Doon Tech Community events.",
+  alternates: { canonical: "/events" }
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function MeetupsPage() {
+export default async function EventsPage() {
   const today = new Date().toISOString().slice(0, 10);
   const meetups = await listAllMeetups();
   return (
     <div className="pt-8 flex flex-col gap-6">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Meetups</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Events</h1>
         <p className="text-inkSoft">Every Doon Tech Community gathering, past and upcoming.</p>
       </header>
       <section className="card-frame rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <div className="flex-1">
           <h2 className="pixel text-sm">SUBSCRIBE TO EVENT CALENDAR</h2>
           <p className="text-sm text-inkSoft mt-1">
-            Get every upcoming Doon Tech Community meetup straight in your calendar via Luma.
+            Get every upcoming Doon Tech Community event straight in your calendar via Luma.
           </p>
         </div>
         <a

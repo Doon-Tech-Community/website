@@ -8,7 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${base}/`, lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: `${base}/dex`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${base}/meetups`, lastModified: now, changeFrequency: "weekly", priority: 0.8 }
+    { url: `${base}/events`, lastModified: now, changeFrequency: "weekly", priority: 0.8 }
   ];
 
   const res = await sessionTables().listRows({

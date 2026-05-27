@@ -21,7 +21,7 @@ const EMPTY_FORM: MeetupFormState = {
   externalUrl: ""
 };
 
-export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
+export default function EventsAdmin({ meetups }: { meetups: Meetup[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
     start(async () => {
       const result = editing ? await updateMeetup(fd) : await createMeetup(fd);
       if (!result.ok) {
-        setError(result.error || (editing ? "Failed to update meetup." : "Failed to create meetup."));
+        setError(result.error || (editing ? "Failed to update event." : "Failed to create event."));
         return;
       }
       setForm(EMPTY_FORM);
@@ -75,7 +75,7 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
       <section className="card-frame rounded-2xl p-5">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
           <h2 className="text-sm uppercase tracking-widest text-slate-300 font-semibold">
-            {editing ? "Edit meetup" : "Create a new meetup"}
+            {editing ? "Edit event" : "Create a new event"}
           </h2>
           {editing && (
             <button type="button" onClick={resetForm} disabled={pending} className="btn btn-ghost !py-1 !px-2 text-xs">
@@ -91,7 +91,7 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
               required
               value={form.title}
               onChange={(e) => set("title", e.target.value)}
-              placeholder="DTC Meetup #12"
+              placeholder="DTC Event #12"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -121,13 +121,13 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
               rows={5}
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
-              placeholder="What is this meetup about?"
+              placeholder="What is this event about?"
             />
           </label>
           {error && <div className="md:col-span-2 chip chip-legendary">{error}</div>}
           <div className="md:col-span-2 flex justify-end">
             <button type="submit" disabled={pending || !form.title.trim() || !form.date} className="btn btn-primary">
-              {pending ? "Saving..." : editing ? "Save meetup" : "Create meetup"}
+              {pending ? "Saving..." : editing ? "Save event" : "Create event"}
             </button>
           </div>
         </form>
@@ -135,10 +135,10 @@ export default function MeetupsAdmin({ meetups }: { meetups: Meetup[] }) {
 
       <section className="card-frame rounded-2xl p-5">
         <h2 className="text-sm uppercase tracking-widest text-slate-300 font-semibold mb-3">
-          Meetups ({meetups.length})
+          Events ({meetups.length})
         </h2>
         {meetups.length === 0 ? (
-          <p className="text-sm text-inkSoft">No meetups yet. Create the first one above.</p>
+          <p className="text-sm text-inkSoft">No events yet. Create the first one above.</p>
         ) : (
           <ul className="flex flex-col divide-y divide-white/5">
             {meetups.map((m) => (

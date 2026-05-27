@@ -72,6 +72,39 @@ A user can edit their own attendee profile when `attendee.user_id` matches their
 - Organizer flow: edit any attendee → fill **Linked user ID** with the user's `$id` (from the Appwrite console)
 - Self-claim flow: `claimAttendee(attendeeId)` server action sets `user_id` if the attendee is unclaimed (currently no UI button — wire as needed)
 
+### Level calculation
+
+Attendee levels are derived from earned or hard-to-fake signals. Users and organizers do not manually set levels in the UI.
+
+The source formula lives in `lib/levels.ts`:
+
+```txt
+xp = profile completeness XP + badge rarity XP + tenure XP
+level = highest nonlinear threshold reached by xp
+```
+
+Profile completeness is capped at 80 XP:
+
+- 10 XP for avatar
+- 10 XP for role/title
+- 10 XP for company
+- 10 XP for location
+- 10 XP for a bio of at least 40 normalized characters
+- 10 XP for at least one social/personal link
+- 5 XP for one tag, 10 XP for two or more tags
+- 10 XP for preferred stack or favorite topic
+
+Badge XP uses rarity:
+
+- common: 25 XP
+- rare: 75 XP
+- epic: 180 XP
+- legendary: 400 XP
+
+Tenure adds 5 XP per full month since the attendee row was created, capped at 60 XP.
+
+`attendees.level` is a server-computed cache used for display/sorting fallback. It is recalculated when profiles are created or updated, badges are awarded or removed, attendees are merged, and tags are removed from attendees. The `/dex?sort=level` query recomputes levels from live profile, badge, and tenure data for the filtered result set before sorting; currently this live sort caps the filtered set at 1000 attendees.
+
 ## Scripts
 
 - `npm run dev` – start the dev server
@@ -87,11 +120,11 @@ app/
   login/ (email OTP form)
   dex/page.tsx (Pokédex grid)
   attendees/[slug]/page.tsx (profile)
-  meetups/page.tsx (link list)
+  events/page.tsx (link list)
   profile/page.tsx, profile/setup/page.tsx (self-service profile)
   admin/page.tsx (organizer dashboard)
   admin/attendees/new + [id]/edit (forms, with AttendeeBadgesPanel)
-  admin/meetups/page.tsx (meetup creation)
+  admin/events/page.tsx (event creation)
   admin/tags/page.tsx (tag creation)
   admin/badges/page.tsx (badge creation)
   og/route.tsx (OG images)
@@ -100,10 +133,11 @@ components/
   Nav, NavLinks, AttendeeCard, AttendeeForm, OrganizerAuthButton
   Avatar, TagChip, BadgePill, FiltersBar, ProfileCompletionGate
   PokedexTilt, PowerButton, DeviceControls, SoundProvider
-  (admin: BadgesAdmin, MeetupsAdmin, TagsAdmin, OrganizerAccessAdmin, AdminAttendeesTable)
+  (admin: BadgesAdmin, EventsAdmin, TagsAdmin, OrganizerAccessAdmin, AdminAttendeesTable)
 lib/
   appwrite.ts (server clients, IDs, helpers)
   auth.ts (getCurrentUser, isOrganizer, requireOrganizer)
+  levels.ts (profile/badge/tenure XP and level thresholds)
   queries.ts (Appwrite reads for pages)
   actions.ts (server actions: OTP, CRUD, upload, merge, claim)
   types.ts
@@ -113,7 +147,7 @@ appwrite.config.json (Appwrite CLI schema)
 ## Notes
 
 - All writes go through server actions in `lib/actions.ts`. They authenticate the request via the session cookie, enforce the `organizer` label (or `user_id` match for self-edits), and use the admin API key to perform the mutation.
-- Organizers can add meetups from `/admin/meetups`; new records appear on `/meetups` and update the dashboard count.
+- Organizers can add events from `/admin/events`; new records appear on `/events` and update the dashboard count.
 - Organizers can add tags from `/admin/tags`; new tags appear in filters and attendee profile forms.
 - Organizers can create badges from `/admin/badges` and award them to attendees via the **Badges** panel on each attendee's edit page (`/admin/attendees/[id]/edit`). Awarded badges are stored in `attendee_badges` and render as `BadgePill`s on the profile page.
 - Avatars upload to the `avatars` bucket; `avatar_file_id` on the attendee references the file. The public view URL is built by `avatarUrl(fileId)` in `lib/appwrite.ts`.

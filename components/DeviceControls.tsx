@@ -2,8 +2,8 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-type Sort = "name" | "attendance" | "level" | "recent";
-const SORTS: Sort[] = ["name", "attendance", "level", "recent"];
+type Sort = "name" | "level" | "recent";
+const SORTS: Sort[] = ["name", "level", "recent"];
 
 export default function DeviceControls() {
   const router = useRouter();
@@ -121,9 +121,9 @@ export default function DeviceControls() {
   const sortLabel = currentSort.toUpperCase();
 
   return (
-    <div className="flex items-center justify-between mt-5 gap-4">
+    <div className="device-controls flex items-center justify-between mt-5 gap-4">
       {/* D-pad */}
-      <div className="flex items-center gap-3">
+      <div className="device-controls__left flex items-center gap-3">
         <div className="dpad" role="group" aria-label="Pokédex navigation">
           <button
             type="button"
@@ -168,7 +168,7 @@ export default function DeviceControls() {
           </button>
         </div>
         {onDex && (
-          <div className="pixel text-[0.5rem] text-white/85" style={{ textShadow: "0 1px 0 rgba(0,0,0,0.4)" }}>
+          <div className="device-controls__readout pixel text-[0.5rem] text-white/85" style={{ textShadow: "0 1px 0 rgba(0,0,0,0.4)" }}>
             <div>PG {currentPage}</div>
             <div className="mt-1 opacity-80">{sortLabel}</div>
           </div>
@@ -176,7 +176,7 @@ export default function DeviceControls() {
       </div>
 
       {/* Right cluster: action button + speaker */}
-      <div className="flex items-center gap-3">
+      <div className="device-controls__right flex items-center gap-3">
         <button
           type="button"
           className="action-btn"
