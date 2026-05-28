@@ -71,7 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <span className="led led-grn" />
               </div>
               <a
-                href="https://chat.whatsapp.com/IV3kpbV3OVz7FJK8htIPa9"
+                href="/community"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="community-chip chip chip-success ml-auto"
