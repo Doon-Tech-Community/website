@@ -133,20 +133,20 @@ export default async function AttendeePage({ params }: PageProps) {
               )}
             </ul>
           </Section>
-
-          {related.length > 0 && (
-            <Section title="Related attendees">
-              <ul className="grid grid-cols-1 gap-3">
-                {related.map((r) => (
-                  <li key={r.id}>
-                    <AttendeeCard a={r} />
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          )}
         </aside>
       </section>
+
+      {related.length > 0 && (
+        <Section title="Related attendees">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {related.map((r) => (
+              <li key={r.id}>
+                <AttendeeCard a={r} />
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
     </article>
   );
 }
