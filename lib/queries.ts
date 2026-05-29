@@ -357,10 +357,11 @@ export async function tagsForAttendee(attendee: Attendee): Promise<Tag[]> {
 
 export async function relatedAttendees(attendee: Attendee, limit = 4): Promise<AttendeeListItem[]> {
   if (attendee.tag_ids.length === 0) return [];
+  const tagMatches = attendee.tag_ids.map((tid) => Query.contains("tag_ids", tid));
   const queries = [
     Query.equal("status", "active"),
     Query.notEqual("$id", attendee.id),
-    Query.or(attendee.tag_ids.map((tid) => Query.contains("tag_ids", tid))),
+    tagMatches.length === 1 ? tagMatches[0] : Query.or(tagMatches),
     Query.limit(20)
   ];
   const res = await (await sessionTables()).listRows({
